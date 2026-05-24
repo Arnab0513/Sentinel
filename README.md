@@ -93,3 +93,5 @@ By default, the server will start on `http://127.0.0.1:8080`.
 
 ### 4. Access the Dashboard
 Open your preferred web browser and navigate to `http://127.0.0.1:8080` to interact with the administrative dashboard.
+
+### 5. The active link of this website is https://arnab0513.github.io/Sentinel/
