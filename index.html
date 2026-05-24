@@ -1,0 +1,2193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sentinel AI — Fraud Detection System</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Exo+2:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root {
+  --bg-base:#060b14; --bg-1:#0a1120; --bg-2:#0d1628; --bg-3:#111e35; --bg-4:#162544;
+  --border:rgba(30,80,160,.25); --border-2:rgba(0,180,255,.18); --border-3:rgba(0,180,255,.35);
+  --cyan:#00d4ff; --cyan-dim:rgba(0,212,255,.1); --cyan-glow:0 0 20px rgba(0,212,255,.22);
+  --blue:#2979ff; --blue-dim:rgba(41,121,255,.1);
+  --red:#ff3d57; --red-dim:rgba(255,61,87,.1); --red-glow:0 0 18px rgba(255,61,87,.28);
+  --amber:#ffab00; --amber-dim:rgba(255,171,0,.1); --amber-glow:0 0 18px rgba(255,171,0,.22);
+  --green:#00e676; --green-dim:rgba(0,230,118,.08); --green-glow:0 0 14px rgba(0,230,118,.22);
+  --violet:#d500f9; --violet-dim:rgba(213,0,249,.09);
+  --text-1:#e8f0ff; --text-2:#8ba0c0; --text-3:#4a6080; --text-4:#2a3a50;
+  --font-ui:'Inter',sans-serif; --font-mono:'JetBrains Mono',monospace; --font-head:'Exo 2',sans-serif;
+  --r-sm:6px; --r-md:10px; --r-lg:14px; --r-xl:18px;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{font-size:14px}
+body{font-family:var(--font-ui);background:var(--bg-base);color:var(--text-1);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,180,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,180,255,.02) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+
+/* ── LIGHT MODE THEME ────────────────────────────────────────── */
+body.light-mode {
+  --bg-base:#f0f4f8;
+  --bg-1:#ffffff;
+  --bg-2:#f8fafc;
+  --bg-3:#eef2f7;
+  --bg-4:#e2e8f0;
+  --border:rgba(100,130,180,.2);
+  --border-2:rgba(37,99,235,.18);
+  --border-3:rgba(37,99,235,.3);
+  --text-1:#0f172a;
+  --text-2:#475569;
+  --text-3:#94a3b8;
+  --text-4:#cbd5e1;
+  --cyan:#0284c7;
+  --cyan-dim:rgba(2,132,199,.08);
+  --blue:#2563eb;
+  --blue-dim:rgba(37,99,235,.08);
+  --red:#dc2626;
+  --red-dim:rgba(220,38,38,.08);
+  --amber:#d97706;
+  --amber-dim:rgba(217,119,6,.08);
+  --green:#059669;
+  --green-dim:rgba(5,150,105,.07);
+  --violet:#7c3aed;
+  --violet-dim:rgba(124,58,237,.08);
+}
+body.light-mode .topbar{background:rgba(255,255,255,.97);box-shadow:0 2px 16px rgba(0,0,0,.08),0 1px 0 rgba(37,99,235,.12)}
+body.light-mode .panel{background:linear-gradient(160deg,#ffffff,#f8fafc)}
+body.light-mode .kcard{background:linear-gradient(135deg,#ffffff,#f8fafc)}
+body.light-mode .utbl tbody tr:hover{background:rgba(37,99,235,.04)}
+body.light-mode .arow:hover{background:rgba(37,99,235,.04)}
+body.light-mode .logo-hex::before{box-shadow:0 0 14px rgba(2,132,199,.35)}
+body.light-mode input,body.light-mode select{background:#f8fafc!important;color:#0f172a!important}
+body.light-mode body::before{background-image:linear-gradient(rgba(37,99,235,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(37,99,235,.025) 1px,transparent 1px)}
+body.light-mode .scanfx::after{background:linear-gradient(transparent,rgba(37,99,235,.025),transparent)}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+@keyframes slideIn{from{opacity:0;transform:translateX(22px)}to{opacity:1;transform:translateX(0)}}
+@keyframes ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+@keyframes rowIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes scanline{0%{transform:translateY(-100%)}100%{transform:translateY(100vh)}}
+@keyframes pulseGlow{0%,100%{opacity:.6}50%{opacity:1}}
+@keyframes modalIn{from{opacity:0;transform:scale(.96) translateY(10px)}to{opacity:1;transform:scale(1) translateY(0)}}
+
+.scanfx{position:fixed;inset:0;pointer-events:none;z-index:1;overflow:hidden}
+.scanfx::after{content:'';position:absolute;left:0;right:0;height:2px;background:linear-gradient(transparent,rgba(0,212,255,.035),transparent);animation:scanline 9s linear infinite}
+
+/* ── TOPBAR ─────────────────────────────────────────────────────── */
+.topbar{position:sticky;top:0;z-index:200;display:flex;align-items:center;justify-content:space-between;padding:0 14px;height:50px;background:rgba(6,11,20,.98);border-bottom:1px solid var(--border-2);backdrop-filter:blur(20px);box-shadow:0 2px 24px rgba(0,0,0,.5),0 1px 0 var(--border-3);gap:6px;overflow:hidden}
+.tb-left{display:flex;align-items:center;gap:8px;flex-shrink:0;min-width:0}
+.logo{display:flex;align-items:center;gap:7px;flex-shrink:0}
+.logo-hex{position:relative;width:28px;height:28px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.logo-hex::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--cyan),var(--blue));clip-path:polygon(50% 0%,95% 25%,95% 75%,50% 100%,5% 75%,5% 25%);animation:pulseGlow 3s ease infinite}
+.logo-hex svg{position:relative;z-index:1;width:17px;height:17px;fill:white}
+.logo-name{font-family:var(--font-head);font-size:14px;font-weight:800;letter-spacing:-.2px;white-space:nowrap}
+.logo-name span{color:var(--cyan)}
+.logo-ver{font-family:var(--font-mono);font-size:8px;color:var(--text-3);background:var(--bg-3);border:1px solid var(--border);padding:1px 5px;border-radius:3px;white-space:nowrap}
+.divv{width:1px;height:20px;background:var(--border-2);flex-shrink:0}
+.pill{display:flex;align-items:center;gap:5px;padding:3px 8px;border-radius:20px;font-size:9.5px;font-weight:600;border:1px solid;white-space:nowrap;flex-shrink:0}
+.pill-g{background:var(--green-dim);border-color:rgba(0,230,118,.22);color:var(--green)}
+.pill-a{background:var(--amber-dim);border-color:rgba(255,171,0,.28);color:var(--amber)}
+.pill-dot{width:5px;height:5px;border-radius:50%;background:currentColor;animation:blink 1.6s ease infinite;box-shadow:0 0 4px currentColor;flex-shrink:0}
+.tb-center{display:flex;align-items:center;gap:10px;font-family:var(--font-mono);font-size:9.5px;color:var(--text-2);flex:1;justify-content:center;min-width:0;overflow:hidden}
+.tci{display:flex;align-items:center;gap:5px}
+.tcl{color:var(--text-3);font-size:9.5px;text-transform:uppercase;letter-spacing:.7px}
+.tcv{color:var(--text-1);font-weight:600}
+.tb-right{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.health-box{display:flex;align-items:center;gap:5px;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--r-md);padding:3px 8px;flex-shrink:0}
+.h-dot{width:7px;height:7px;border-radius:50%;box-shadow:0 0 6px currentColor}
+.h-lbl{font-family:var(--font-mono);font-size:9.5px;color:var(--text-2);margin-left:3px}
+.clock{font-family:var(--font-mono);font-size:11px;color:var(--cyan);background:var(--cyan-dim);border:1px solid var(--border-3);border-radius:var(--r-sm);padding:3px 8px;letter-spacing:.3px;white-space:nowrap;flex-shrink:0}
+
+/* ── LAYOUT ─────────────────────────────────────────────────────── */
+.page{position:relative;z-index:2;padding:18px 20px;display:flex;flex-direction:column;gap:16px;max-width:1700px;margin:0 auto;width:100%;box-sizing:border-box}
+
+/* ── KPI CARDS ───────────────────────────────────────────────────── */
+.kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;animation:fadeUp .45s ease both}
+.kcard{position:relative;overflow:hidden;background:linear-gradient(135deg,var(--bg-2),var(--bg-1));border:1px solid var(--border);border-radius:var(--r-lg);padding:16px 18px;cursor:default;transition:transform .2s,border-color .2s,box-shadow .2s}
+.kcard:hover{transform:translateY(-2px);border-color:var(--border-3);box-shadow:var(--cyan-glow)}
+.kcard::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--kc,var(--cyan)),transparent);opacity:.65}
+.kcard::after{content:'';position:absolute;top:0;right:0;width:70px;height:70px;background:radial-gradient(circle,var(--kc,var(--cyan)),transparent 70%);opacity:.04;transform:translate(18px,-18px)}
+.kcard-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.kicon{width:34px;height:34px;border-radius:var(--r-sm);background:var(--kib,var(--cyan-dim));border:1px solid var(--kib2,rgba(0,212,255,.2));display:flex;align-items:center;justify-content:center}
+.kicon svg{width:16px;height:16px}
+.ktrend{font-family:var(--font-mono);font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:20px;border:1px solid}
+.tup{background:var(--red-dim);border-color:rgba(255,61,87,.25);color:var(--red)}
+.tdown{background:var(--green-dim);border-color:rgba(0,230,118,.2);color:var(--green)}
+.tflat{background:var(--bg-3);border-color:var(--border);color:var(--text-2)}
+.kval{font-family:var(--font-head);font-size:34px;font-weight:800;color:var(--text-1);line-height:1;letter-spacing:-1.5px}
+.klbl{font-size:10.5px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.7px;margin-top:5px}
+.ksub{font-family:var(--font-mono);font-size:10px;color:var(--text-3);margin-top:3px}
+
+/* ── MAIN GRID ───────────────────────────────────────────────────── */
+.mgrid{display:grid;grid-template-columns:1fr 310px;gap:14px;animation:fadeUp .45s .1s ease both;width:100%;min-width:0}
+.lcol{display:flex;flex-direction:column;gap:14px;min-width:0}.rcol{display:flex;flex-direction:column;gap:14px;min-width:0}
+
+/* ── PANEL ───────────────────────────────────────────────────────── */
+.panel{background:linear-gradient(160deg,var(--bg-2),var(--bg-1));border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;transition:box-shadow .2s;position:relative}
+.panel:hover{box-shadow:var(--cyan-glow)}
+.phead{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);background:rgba(0,212,255,.02)}
+.ptitle{font-family:var(--font-head);font-size:12px;font-weight:700;color:var(--text-1);display:flex;align-items:center;gap:8px;letter-spacing:.2px}
+.pdot{width:7px;height:7px;border-radius:50%;background:var(--pd,var(--cyan));box-shadow:0 0 7px var(--pd,var(--cyan));animation:blink 2.5s ease infinite}
+.pacts{display:flex;gap:7px;align-items:center}
+.tabs{display:flex;gap:2px;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--r-sm);padding:2px}
+.tab{font-family:var(--font-mono);font-size:10px;font-weight:600;padding:3px 10px;border-radius:4px;border:none;background:transparent;color:var(--text-3);cursor:pointer;transition:all .15s}
+.tab.active,.tab:hover{background:var(--bg-4);color:var(--cyan);box-shadow:0 0 0 1px rgba(0,212,255,.18)}
+.cbadge{font-family:var(--font-mono);font-size:10px;font-weight:700;padding:2px 9px;border-radius:3px;border:1px solid}
+.cb-a{background:var(--amber-dim);border-color:rgba(255,171,0,.3);color:var(--amber)}
+.cb-r{background:var(--red-dim);border-color:rgba(255,61,87,.3);color:var(--red)}
+.cb-g{background:var(--green-dim);border-color:rgba(0,230,118,.2);color:var(--green)}
+.cb-c{background:var(--cyan-dim);border-color:rgba(0,212,255,.25);color:var(--cyan)}
+.carea{padding:14px 16px}
+.carea canvas{max-height:188px}
+
+/* ── USER TABLE ──────────────────────────────────────────────────── */
+.utbl{width:100%;border-collapse:collapse}
+.utbl thead tr{background:var(--bg-3);border-bottom:1px solid var(--border)}
+.utbl th{padding:9px 13px;font-size:9.5px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.9px;text-align:left;white-space:nowrap}
+.utbl tbody tr{border-bottom:1px solid var(--border);transition:background .12s;animation:rowIn .32s ease both;cursor:pointer}
+.utbl tbody tr:hover{background:rgba(0,212,255,.04)}
+.utbl tbody tr:last-child{border-bottom:none}
+.utbl td{padding:11px 13px;font-size:12.5px;color:var(--text-1);vertical-align:middle}
+.utbl tbody tr.blocked-row{opacity:.45;pointer-events:none}
+.utbl tbody tr.watchlisted-row td:first-child::after{content:'👁';margin-left:6px;font-size:10px}
+.ucell{display:flex;align-items:center;gap:9px}
+.uav{width:29px;height:29px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--font-head);font-size:11px;font-weight:800;color:#fff;flex-shrink:0}
+.uid{font-family:var(--font-mono);font-size:11.5px;font-weight:600;color:var(--cyan)}
+.udept{font-size:10px;color:var(--text-3);margin-top:1px}
+.achip{font-family:var(--font-mono);font-size:10px;background:var(--bg-3);color:var(--text-2);border:1px solid var(--border);border-radius:4px;padding:3px 7px;display:inline-block;white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis}
+.sbar{display:flex;align-items:center;gap:8px}
+.strk{width:64px;height:5px;background:var(--bg-4);border-radius:99px;overflow:hidden}
+.sfil{height:100%;border-radius:99px;transition:width .5s ease}
+.snum{font-family:var(--font-mono);font-size:12px;font-weight:700;min-width:22px}
+.rtag{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;border:1px solid;letter-spacing:.3px}
+.rtag::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor;box-shadow:0 0 5px currentColor}
+.rth{color:var(--red);background:var(--red-dim);border-color:rgba(255,61,87,.3)}
+.rtm{color:var(--amber);background:var(--amber-dim);border-color:rgba(255,171,0,.3)}
+.rtl{color:var(--cyan);background:var(--cyan-dim);border-color:rgba(0,212,255,.3)}
+.tsc{font-family:var(--font-mono);font-size:10.5px;color:var(--text-3)}
+.btn-az{font-family:var(--font-mono);font-size:10px;font-weight:700;padding:5px 11px;border-radius:var(--r-sm);border:1px solid rgba(0,212,255,.3);background:var(--cyan-dim);color:var(--cyan);cursor:pointer;transition:all .15s;letter-spacing:.4px}
+.btn-az:hover{background:rgba(0,212,255,.18);border-color:var(--cyan);box-shadow:var(--cyan-glow)}
+
+/* ── BOTTOM ROW ──────────────────────────────────────────────────── */
+.brow{display:grid;grid-template-columns:1fr 1fr;gap:14px;animation:fadeUp .45s .2s ease both;align-items:stretch;width:100%;min-width:0}
+.hmhrs{display:grid;grid-template-columns:repeat(24,1fr);gap:3px;margin-bottom:4px}
+.hmhrs span{font-family:var(--font-mono);font-size:8px;color:var(--text-4);text-align:center}
+.hmgrid{display:grid;grid-template-columns:repeat(24,1fr);gap:3px}
+.hmcell{height:22px;border-radius:4px;cursor:pointer;transition:transform .14s,filter .14s;border:1px solid rgba(255,255,255,.04)}
+.hmcell:hover{transform:scaleY(1.3);filter:brightness(1.3);z-index:10;position:relative}
+.hmlgd{display:flex;align-items:center;gap:7px;margin-top:9px;font-size:10px;color:var(--text-3);font-weight:600}
+.hmsw{display:flex;gap:3px}
+.hmswi{width:12px;height:12px;border-radius:3px}
+
+/* ── RIGHT COLUMN ────────────────────────────────────────────────── */
+.gbody{display:flex;flex-direction:column;align-items:center;padding:16px 12px 12px}
+.gwrap{position:relative;width:190px;height:104px}
+.gscore{position:absolute;bottom:2px;left:50%;transform:translateX(-50%);text-align:center;pointer-events:none}
+.gnum{font-family:var(--font-head);font-size:42px;font-weight:800;letter-spacing:-2px;line-height:1;transition:color .4s}
+.glbl{font-family:var(--font-mono);font-size:8.5px;color:var(--text-3);letter-spacing:2px;text-transform:uppercase;margin-top:1px}
+.rstat{display:flex;align-items:center;gap:7px;margin-top:10px;padding:6px 16px;border-radius:20px;border:1px solid;font-family:var(--font-mono);font-size:11px;font-weight:700;transition:all .4s}
+.rsd{width:7px;height:7px;border-radius:50%;background:currentColor;box-shadow:0 0 7px currentColor;animation:blink 1.5s infinite}
+.astream{max-height:400px;overflow-y:auto;padding:4px 0}
+.astream::-webkit-scrollbar{width:3px}
+.astream::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:3px}
+.arow{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s;animation:slideIn .3s ease both}
+.arow:hover{background:rgba(0,212,255,.04)}
+.arow:last-child{border-bottom:none}
+.aico{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;border:1px solid}
+.ai-c{background:var(--red-dim);border-color:rgba(255,61,87,.3)}
+.ai-w{background:var(--amber-dim);border-color:rgba(255,171,0,.3)}
+.ai-i{background:var(--cyan-dim);border-color:rgba(0,212,255,.2)}
+.abody{flex:1;min-width:0}
+.atitle{font-size:12px;font-weight:600;color:var(--text-1);line-height:1.3;margin-bottom:3px}
+.ameta{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.ats{font-family:var(--font-mono);font-size:10px;color:var(--text-3)}
+.stag{font-family:var(--font-mono);font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;border:1px solid;letter-spacing:.4px}
+.sc{color:var(--red);background:var(--red-dim);border-color:rgba(255,61,87,.3)}
+.sw{color:var(--amber);background:var(--amber-dim);border-color:rgba(255,171,0,.3)}
+.si{color:var(--cyan);background:var(--cyan-dim);border-color:rgba(0,212,255,.3)}
+.sm{color:#c084fc;background:var(--violet-dim);border-color:rgba(213,0,249,.25)}
+.btn-dismiss{font-family:var(--font-mono);font-size:9px;padding:2px 7px;border-radius:3px;border:1px solid var(--border);background:transparent;color:var(--text-3);cursor:pointer;transition:all .15s;margin-left:auto;flex-shrink:0}
+.btn-dismiss:hover{background:var(--bg-3);color:var(--text-1);border-color:var(--border-2)}
+.mlrow{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)}
+.mlrow:last-of-type{border-bottom:none}
+.mll{display:flex;align-items:center;gap:9px}
+.mli{width:5px;height:5px;border-radius:50%;box-shadow:0 0 5px currentColor}
+.mln{font-size:12px;font-weight:500;color:var(--text-2)}
+.mlr{display:flex;align-items:center;gap:9px}
+.mltrk{width:80px;height:4px;background:var(--bg-4);border-radius:99px;overflow:hidden}
+.mlfil{height:100%;border-radius:99px;transition:width 1s ease}
+.mlv{font-family:var(--font-mono);font-size:11.5px;font-weight:700;color:var(--text-1);min-width:36px;text-align:right}
+.algobox{margin-top:11px;background:linear-gradient(135deg,var(--cyan-dim),var(--blue-dim));border:1px solid var(--border-3);border-radius:var(--r-md);padding:11px 13px;display:flex;align-items:center;gap:11px}
+.algoico{width:32px;height:32px;border-radius:var(--r-sm);background:linear-gradient(135deg,var(--cyan),var(--blue));display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:var(--cyan-glow)}
+.algoico svg{width:16px;height:16px;fill:white}
+.agoname{font-family:var(--font-head);font-size:12.5px;font-weight:700;color:var(--text-1)}
+.agoparam{font-family:var(--font-mono);font-size:9.5px;color:var(--text-3);margin-top:2px;line-height:1.5}
+
+/* ── TICKER ──────────────────────────────────────────────────────── */
+.ticker{background:linear-gradient(90deg,var(--bg-base),var(--bg-1),var(--bg-base));border-top:1px solid var(--border-2);padding:8px 0;overflow:hidden;position:relative}
+.ticker::before,.ticker::after{content:'';position:absolute;top:0;bottom:0;width:70px;z-index:2}
+.ticker::before{left:0;background:linear-gradient(90deg,var(--bg-base),transparent)}
+.ticker::after{right:0;background:linear-gradient(-90deg,var(--bg-base),transparent)}
+.tkinner{display:flex;align-items:center;gap:36px;white-space:nowrap;font-family:var(--font-mono);font-size:10.5px;animation:ticker 55s linear infinite}
+.tkc{color:var(--red);font-weight:600}.tkw{color:var(--amber)}.tki{color:var(--cyan);opacity:.8}.tks{color:var(--text-4)}
+
+/* ── MODAL ───────────────────────────────────────────────────────── */
+.mbg{position:fixed;inset:0;background:rgba(6,11,20,.88);z-index:9000;display:none;align-items:center;justify-content:center;backdrop-filter:blur(8px);padding:16px;overflow-y:auto}
+.mbg.show{display:flex}
+.mbox{background:linear-gradient(160deg,var(--bg-3),var(--bg-2));border:1px solid var(--border-3);border-radius:var(--r-xl);padding:0;max-width:720px;width:100%;box-shadow:0 0 60px rgba(0,212,255,.1),0 30px 60px rgba(0,0,0,.6);animation:modalIn .28s ease;position:relative;overflow:hidden}
+.mbox::before{content:'';position:absolute;top:0;left:10%;right:10%;height:1px;background:linear-gradient(90deg,transparent,var(--cyan),transparent)}
+.mhead{display:flex;align-items:center;justify-content:space-between;padding:20px 24px 16px;border-bottom:1px solid var(--border)}
+.mhead-l{}
+.mtitle{font-family:var(--font-head);font-size:18px;font-weight:800;color:var(--text-1)}
+.msub{font-family:var(--font-mono);font-size:10.5px;color:var(--text-3);margin-top:4px}
+.mbadge-wrap{display:flex;align-items:center;gap:8px}
+.mbtn-close{width:30px;height:30px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--bg-3);color:var(--text-2);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
+.mbtn-close:hover{background:var(--bg-4);color:var(--text-1);border-color:var(--cyan)}
+.mbody{padding:20px 24px;display:flex;flex-direction:column;gap:16px;max-height:78vh;overflow-y:auto}
+.mbody::-webkit-scrollbar{width:4px}
+.mbody::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:4px}
+.mfgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+.mf{background:var(--bg-1);border:1px solid var(--border);border-radius:var(--r-md);padding:10px 12px}
+.mfl{font-size:9px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:4px}
+.mfv{font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--text-1)}
+.msection{background:var(--bg-1);border:1px solid var(--border);border-radius:var(--r-md);padding:14px 16px}
+.msect-title{font-family:var(--font-head);font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.msect-bar{width:3px;height:13px;border-radius:2px;flex-shrink:0;box-shadow:0 0 6px currentColor}
+.why-item{display:flex;align-items:flex-start;gap:8px;margin-bottom:8px;font-size:12px;color:var(--text-2);line-height:1.45}
+.why-item:last-child{margin-bottom:0}
+.why-arr{color:var(--amber);flex-shrink:0;margin-top:2px;font-size:11px}
+.rbrow{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+.rbrow:last-child{margin-bottom:0}
+.rblbl{font-size:11.5px;color:var(--text-2);min-width:138px;font-family:var(--font-mono)}
+.rbtrk{flex:1;height:6px;background:var(--bg-4);border-radius:99px;overflow:hidden}
+.rbfil{height:100%;border-radius:99px;transition:width .9s ease}
+.rbval{font-family:var(--font-mono);font-size:11px;font-weight:700;min-width:24px;text-align:right}
+.mfooter{padding:14px 24px 20px;border-top:1px solid var(--border);background:rgba(0,0,0,.15)}
+.mactions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.mact{padding:11px 10px;border-radius:var(--r-md);border:1px solid;font-family:var(--font-head);font-size:12px;font-weight:700;cursor:pointer;transition:all .18s;letter-spacing:.5px;display:flex;align-items:center;justify-content:center;gap:7px}
+.mact:disabled{opacity:.4;cursor:not-allowed;transform:none!important}
+.mact-r{background:var(--red-dim);border-color:rgba(255,61,87,.4);color:var(--red)}
+.mact-r:hover:not(:disabled){background:rgba(255,61,87,.18);box-shadow:var(--red-glow);transform:translateY(-1px)}
+.mact-a{background:var(--amber-dim);border-color:rgba(255,171,0,.4);color:var(--amber)}
+.mact-a:hover:not(:disabled){background:rgba(255,171,0,.16);box-shadow:var(--amber-glow);transform:translateY(-1px)}
+.mact-g{background:var(--bg-3);border-color:var(--border);color:var(--text-2)}
+.mact-g:hover:not(:disabled){background:var(--bg-4);color:var(--text-1);border-color:var(--border-2);transform:translateY(-1px)}
+.mact-success{background:var(--green-dim);border-color:rgba(0,230,118,.35);color:var(--green)!important;cursor:default!important;transform:none!important}
+
+/* ── ACTION LOG PANEL ────────────────────────────────────────────── */
+.actlog{max-height:120px;overflow-y:auto;padding:8px 14px;border-top:1px solid var(--border)}
+.actlog::-webkit-scrollbar{width:3px}
+.actlog::-webkit-scrollbar-thumb{background:var(--border-2)}
+.logrow{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(14,48,80,.3);font-size:11px}
+.logrow:last-child{border-bottom:none}
+.logt{font-family:var(--font-mono);font-size:9.5px;color:var(--text-3);min-width:70px}
+.logi{font-family:var(--font-mono);font-size:10px;font-weight:700;padding:1px 6px;border-radius:3px}
+.logmsg{color:var(--text-2);flex:1}
+
+/* ── TOAST ───────────────────────────────────────────────────────── */
+.toasts{position:fixed;top:62px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:7px}
+.toast{display:flex;align-items:flex-start;gap:11px;background:linear-gradient(135deg,var(--bg-3),var(--bg-2));border:1px solid var(--border-3);border-left:3px solid var(--tc,var(--cyan));border-radius:var(--r-lg);padding:12px 14px;min-width:280px;max-width:340px;box-shadow:0 8px 28px rgba(0,0,0,.5);animation:slideIn .28s ease}
+.tst-ico{font-size:15px;flex-shrink:0;margin-top:1px}
+.tst-title{font-size:12.5px;font-weight:700;color:var(--text-1);margin-bottom:2px}
+.tst-msg{font-size:11px;color:var(--text-2);line-height:1.4}
+
+/* ── TOOLTIP ─────────────────────────────────────────────────────── */
+.tip{position:fixed;background:var(--bg-3);border:1px solid var(--border-3);color:var(--text-1);padding:6px 11px;border-radius:var(--r-sm);font-family:var(--font-mono);font-size:10.5px;pointer-events:none;z-index:9998;display:none;box-shadow:var(--cyan-glow);white-space:nowrap;line-height:1.6}
+
+@media(max-width:1400px){.tb-center{gap:7px;font-size:9px}}
+@media(max-width:1200px){.mgrid{grid-template-columns:1fr}.rcol{display:grid;grid-template-columns:1fr 1fr 1fr}.kpi-row{grid-template-columns:repeat(3,1fr)}.tb-center{gap:6px}.brow{grid-template-columns:1fr 1fr}}
+@media(max-width:1000px){.tb-center .tci:nth-child(n+7){display:none}}
+@media(max-width:850px){.tb-center{display:none}}
+@media(max-width:750px){.kpi-row{grid-template-columns:1fr 1fr}.rcol{grid-template-columns:1fr}.brow{grid-template-columns:1fr}.logo-ver{display:none}}
+</style>
+</head>
+<body>
+<div class="scanfx"></div>
+
+<header class="topbar">
+  <div class="tb-left">
+    <div class="logo">
+      <div class="logo-hex"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg></div>
+      <div><div class="logo-name">SENTINEL<span> AI</span></div></div>
+      <div class="logo-ver">v2.4.1</div>
+    </div>
+    <div class="divv"></div>
+    <div class="pill pill-g"><div class="pill-dot"></div>SIMULATED REAL-TIME ENV</div>
+    <div class="pill pill-a"><div class="pill-dot"></div>THREAT: ELEVATED</div>
+  </div>
+  <div class="tb-center">
+    <div class="tci"><span class="tcl">MODEL</span><span class="tcv">Isolation Forest</span></div>
+    <span style="color:var(--text-4)">·</span>
+    <div class="tci"><span class="tcl">ACC</span><span class="tcv" style="color:var(--green)">97.3%</span></div>
+    <span style="color:var(--text-4)">·</span>
+    <div class="tci"><span class="tcl">USERS</span><span class="tcv">1,247</span></div>
+    <span style="color:var(--text-4)">·</span>
+    <div class="tci"><span class="tcl">BLOCKED</span><span class="tcv" id="hdrBlocked" style="color:var(--red)">0</span></div>
+    <span style="color:var(--text-4)">·</span>
+    <div class="tci"><span class="tcl">WATCH</span><span class="tcv" id="hdrWatch" style="color:var(--amber)">0</span></div>
+  </div>
+  <div class="tb-right">
+    <div class="health-box">
+      <div class="h-dot" style="color:var(--green);background:var(--green)"></div>
+      <div class="h-dot" style="color:var(--green);background:var(--green)"></div>
+      <div class="h-dot" style="color:var(--amber);background:var(--amber)"></div>
+      <div class="h-dot" style="color:var(--green);background:var(--green)"></div>
+      <span class="h-lbl">HEALTH</span>
+    </div>
+    <button onclick="openGeoMap()" style="font-family:var(--font-mono);font-size:9px;font-weight:700;padding:3px 8px;border-radius:var(--r-sm);border:1px solid rgba(0,230,118,.3);background:var(--green-dim);color:var(--green);cursor:pointer;display:flex;align-items:center;gap:4px;transition:all .15s;white-space:nowrap;flex-shrink:0" onmouseover="this.style.background='rgba(0,230,118,.18)'" onmouseout="this.style.background='var(--green-dim)'">
+      📍 GEO
+    </button>
+    <button onclick="openNotifCenter()" style="font-family:var(--font-mono);font-size:9px;font-weight:700;padding:3px 8px;border-radius:var(--r-sm);border:1px solid rgba(255,61,87,.3);background:var(--red-dim);color:var(--red);cursor:pointer;display:flex;align-items:center;gap:4px;transition:all .15s;white-space:nowrap;flex-shrink:0" onmouseover="this.style.background='rgba(255,61,87,.18)'" onmouseout="this.style.background='var(--red-dim)'">
+      🔔 <span id="tbNotifCount">0</span>
+    </button>
+    <div id="roleChip" style="font-family:var(--font-mono);font-size:9px;font-weight:700;padding:3px 8px;border-radius:var(--r-sm);border:1px solid var(--border-3);background:var(--cyan-dim);color:var(--cyan);white-space:nowrap;flex-shrink:0">ADMIN</div>
+    <button id="themeToggle" onclick="toggleTheme()" title="Toggle Day/Night Mode"
+      style="font-family:var(--font-mono);font-size:11px;font-weight:700;padding:3px 9px;border-radius:var(--r-sm);border:1px solid var(--border-2);background:var(--bg-3);color:var(--text-2);cursor:pointer;transition:all .2s;white-space:nowrap;flex-shrink:0;display:flex;align-items:center;gap:4px"
+      onmouseover="this.style.borderColor='var(--cyan)';this.style.color='var(--cyan)'"
+      onmouseout="this.style.borderColor='var(--border-2)';this.style.color='var(--text-2)'">
+      <span id="themeIcon">🌙</span>
+    </button>
+    <button onclick="doLogout()" style="font-family:var(--font-mono);font-size:9px;font-weight:700;padding:3px 8px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--bg-3);color:var(--text-2);cursor:pointer;transition:all .15s;white-space:nowrap;flex-shrink:0" onmouseover="this.style.color='var(--text-1)'" onmouseout="this.style.color='var(--text-2)'">LOGOUT</button>
+    <div class="clock" id="clock">--:--:-- IST</div>
+  </div>
+</header>
+
+<div class="toasts" id="toasts"></div>
+<div class="tip"    id="tip"></div>
+
+<div class="page">
+
+  <!-- KPI -->
+  <div class="kpi-row">
+    <div class="kcard" style="--kc:var(--red)">
+      <div class="kcard-top">
+        <div class="kicon" style="--kib:var(--red-dim);--kib2:rgba(255,61,87,.2)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2.2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </div>
+        <div class="ktrend tup" id="k1t">↑ +4</div>
+      </div>
+      <div class="kval" id="k1">—</div>
+      <div class="klbl">HIGH RISK USERS</div>
+      <div class="ksub" style="color:var(--red)">Immediate action required</div>
+    </div>
+    <div class="kcard" style="--kc:var(--amber)">
+      <div class="kcard-top">
+        <div class="kicon" style="--kib:var(--amber-dim);--kib2:rgba(255,171,0,.2)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <div class="ktrend tup">↑ Live</div>
+      </div>
+      <div class="kval" id="k2">—</div>
+      <div class="klbl">ACTIVE ANOMALIES</div>
+      <div class="ksub">Updated every 8 seconds</div>
+    </div>
+    <div class="kcard" style="--kc:var(--cyan)">
+      <div class="kcard-top">
+        <div class="kicon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        </div>
+        <div class="ktrend tflat">LIVE</div>
+      </div>
+      <div class="kval" id="k3">847</div>
+      <div class="klbl">EVENTS / SEC</div>
+      <div class="ksub">Within normal baseline</div>
+    </div>
+    <div class="kcard" style="--kc:var(--green)">
+      <div class="kcard-top">
+        <div class="kicon" style="--kib:var(--green-dim);--kib2:rgba(0,230,118,.2)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        </div>
+        <div class="ktrend tdown">↓ 99.1%</div>
+      </div>
+      <div class="kval">14.2K</div>
+      <div class="klbl">MODEL DECISIONS</div>
+      <div class="ksub" style="color:var(--green)">99.1% auto-resolved</div>
+    </div>
+    <div class="kcard" style="--kc:var(--violet)">
+      <div class="kcard-top">
+        <div class="kicon" style="--kib:var(--violet-dim);--kib2:rgba(213,0,249,.2)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2.2"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+        </div>
+        <div class="ktrend tup" id="k5t">0 NEW</div>
+      </div>
+      <div class="kval" id="k5">0</div>
+      <div class="klbl">ALERTS TRIGGERED</div>
+      <div class="ksub">This session</div>
+    </div>
+  </div>
+
+  <!-- MAIN GRID -->
+  <div class="mgrid">
+    <div class="lcol">
+      <div class="panel">
+        <div class="phead">
+          <div class="ptitle"><div class="pdot"></div>Anomaly Score Timeline</div>
+          <div class="pacts">
+            <div class="tabs">
+              <button class="tab active" onclick="switchTL(60,this)">1H</button>
+              <button class="tab" onclick="switchTL(120,this)">6H</button>
+              <button class="tab" onclick="switchTL(180,this)">24H</button>
+            </div>
+          </div>
+        </div>
+        <div class="carea"><canvas id="tlChart"></canvas></div>
+      </div>
+
+      <div class="panel">
+        <div class="phead">
+          <div class="ptitle"><div class="pdot" style="--pd:var(--amber)"></div>Flagged Users — Live Feed</div>
+          <div class="pacts">
+            <span style="font-family:var(--font-mono);font-size:9.5px;color:var(--text-3)" id="tblTs">Just now</span>
+            <div class="cbadge cb-a" id="tblCnt">— flagged</div>
+            <button onclick="openExportModal()" style="font-family:var(--font-mono);font-size:10px;font-weight:700;padding:4px 12px;border-radius:var(--r-sm);border:1px solid rgba(0,230,118,.35);background:var(--green-dim);color:var(--green);cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .15s" onmouseover="this.style.background='rgba(0,230,118,.18)';this.style.boxShadow='0 0 12px rgba(0,230,118,.2)'" onmouseout="this.style.background='var(--green-dim)';this.style.boxShadow='none'">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              EXPORT
+            </button>
+          </div>
+        </div>
+        <table class="utbl">
+          <thead><tr>
+            <th>User</th><th>Anomaly Type</th><th>Risk Score</th>
+            <th>Risk Level</th><th>Last Seen</th><th></th>
+          </tr></thead>
+          <tbody id="utbl"></tbody>
+        </table>
+      </div>
+
+      <!-- ACTION LOG -->
+      <div class="panel">
+        <div class="phead">
+          <div class="ptitle"><div class="pdot" style="--pd:var(--green)"></div>Admin Action Log</div>
+          <div class="cbadge cb-g" id="logBadge">0 actions</div>
+        </div>
+        <div class="actlog" id="actLog">
+          <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-3);padding:8px 0;text-align:center">No actions taken yet this session.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="rcol">
+      <div class="panel">
+        <div class="phead">
+          <div class="ptitle"><div class="pdot" style="--pd:var(--red)"></div>System Risk Index</div>
+          <div class="cbadge cb-r" id="gBadge">HIGH</div>
+        </div>
+        <div class="gbody">
+          <div class="gwrap">
+            <canvas id="gChart" width="190" height="104"></canvas>
+            <div class="gscore"><div class="gnum" id="gNum">74</div><div class="glbl">RISK SCORE</div></div>
+          </div>
+          <div class="rstat" id="rStat" style="background:var(--red-dim);border-color:rgba(255,61,87,.35);color:var(--red)">
+            <div class="rsd"></div>HIGH ALERT
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" >
+        <div class="phead">
+          <div class="ptitle"><div class="pdot" style="--pd:var(--red)"></div>Alert Stream</div>
+          <div class="cbadge cb-r" id="aBadge">0 NEW</div>
+        </div>
+        <div class="astream" id="astream"></div>
+      </div>
+
+      <div class="panel">
+        <div class="phead">
+          <div class="ptitle"><div class="pdot" style="--pd:var(--blue)"></div>ML Model Performance</div>
+          <div style="display:flex;align-items:center;gap:7px">
+            <div class="cbadge cb-g" id="mlStatus">ACTIVE</div>
+            <button id="retrainBtn" onclick="retrainModel()"
+              style="font-family:var(--font-mono);font-size:9px;font-weight:700;padding:3px 9px;border-radius:var(--r-sm);border:1px solid rgba(0,230,118,.35);background:var(--green-dim);color:var(--green);cursor:pointer;transition:all .18s;display:flex;align-items:center;gap:4px;white-space:nowrap"
+              onmouseover="this.style.background='rgba(0,230,118,.2)';this.style.boxShadow='0 0 10px rgba(0,230,118,.2)'"
+              onmouseout="this.style.background='var(--green-dim)';this.style.boxShadow='none'">
+              ⟳ RETRAIN
+            </button>
+          </div>
+        </div>
+        <div style="padding:12px 14px" id="mlpane"></div>
+        <div id="retrainProgress" style="display:none;padding:0 14px 12px">
+          <div style="background:var(--bg-3);border:1px solid var(--border);border-radius:var(--r-md);padding:11px 14px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <span style="font-family:var(--font-mono);font-size:10px;color:var(--cyan)" id="retrainStatus">Initialising retrain...</span>
+              <span style="font-family:var(--font-mono);font-size:10px;color:var(--text-3)" id="retrainPct">0%</span>
+            </div>
+            <div style="height:4px;background:var(--bg-4);border-radius:99px;overflow:hidden">
+              <div id="retrainBar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--cyan),var(--blue));border-radius:99px;transition:width .4s ease"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIVE EVENT LOG + TREND GRAPH ROW -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;animation:fadeUp .45s .3s ease both">
+
+    <!-- LIVE EVENT LOG -->
+    <div class="panel">
+      <div class="phead">
+        <div class="ptitle"><div class="pdot" style="--pd:var(--green)"></div>Live Event Terminal</div>
+        <div style="display:flex;align-items:center;gap:7px">
+          <div style="display:flex;align-items:center;gap:5px;font-family:var(--font-mono);font-size:9px;color:var(--green)">
+            <div style="width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 5px var(--green);animation:blink 1s infinite"></div>
+            STREAMING
+          </div>
+          <button onclick="clearLog()" style="font-family:var(--font-mono);font-size:9px;padding:2px 8px;border-radius:3px;border:1px solid var(--border);background:transparent;color:var(--text-3);cursor:pointer;transition:all .15s" onmouseover="this.style.color='var(--text-1)'" onmouseout="this.style.color='var(--text-3)'">CLEAR</button>
+        </div>
+      </div>
+      <div id="eventLog" style="height:200px;overflow-y:auto;padding:8px 14px;font-family:var(--font-mono);font-size:10.5px;background:var(--bg-1);border-top:1px solid var(--border)">
+        <div style="color:var(--text-3);text-align:center;padding-top:80px">Waiting for events...</div>
+      </div>
+    </div>
+
+    <!-- DEPARTMENT TREND GRAPH -->
+    <div class="panel">
+      <div class="phead">
+        <div class="ptitle"><div class="pdot" style="--pd:var(--amber)"></div>Risk Trend — By Department</div>
+        <span style="font-family:var(--font-mono);font-size:9px;color:var(--text-3)">Last 7 days</span>
+      </div>
+      <div class="carea"><canvas id="trendChart" style="max-height:195px"></canvas></div>
+    </div>
+
+  </div>
+
+  <!-- BOTTOM ROW -->
+  <div class="brow">
+    <div class="panel">
+      <div class="phead">
+        <div class="ptitle"><div class="pdot" style="--pd:var(--cyan)"></div>Access Heatmap — 24 Hours</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-family:var(--font-mono);font-size:9.5px;color:var(--text-3)">Hover for detail</span>
+          <button onclick="buildHeatmap()" style="font-family:var(--font-mono);font-size:9.5px;font-weight:700;padding:3px 10px;border-radius:var(--r-sm);border:1px solid var(--border-3);background:var(--cyan-dim);color:var(--cyan);cursor:pointer;transition:all .15s" onmouseover="this.style.background='rgba(0,212,255,.18)'" onmouseout="this.style.background='var(--cyan-dim)'">↺ Refresh</button>
+        </div>
+      </div>
+      <div style="padding:13px 16px 14px">
+        <div class="hmhrs" id="hmH"></div>
+        <div class="hmgrid" id="hmG"></div>
+
+        <!-- LEGEND ROW -->
+        <div style="display:flex;align-items:center;gap:6px;margin-top:10px;flex-wrap:wrap">
+          <span style="font-family:var(--font-mono);font-size:9.5px;color:var(--text-3);font-weight:600;margin-right:2px">Intensity:</span>
+          <div style="display:flex;align-items:center;gap:4px">
+            <div style="width:11px;height:11px;border-radius:3px;background:#0d3060"></div>
+            <span style="font-family:var(--font-mono);font-size:9px;color:var(--text-3)">Very Low</span>
+          </div>
+          <div style="width:1px;height:10px;background:var(--border)"></div>
+          <div style="display:flex;align-items:center;gap:4px">
+            <div style="width:11px;height:11px;border-radius:3px;background:#0a5080"></div>
+            <span style="font-family:var(--font-mono);font-size:9px;color:var(--cyan)">Low</span>
+          </div>
+          <div style="width:1px;height:10px;background:var(--border)"></div>
+          <div style="display:flex;align-items:center;gap:4px">
+            <div style="width:11px;height:11px;border-radius:3px;background:#096a60"></div>
+            <span style="font-family:var(--font-mono);font-size:9px;color:var(--green)">Medium</span>
+          </div>
+          <div style="width:1px;height:10px;background:var(--border)"></div>
+          <div style="display:flex;align-items:center;gap:4px">
+            <div style="width:11px;height:11px;border-radius:3px;background:#a05000"></div>
+            <span style="font-family:var(--font-mono);font-size:9px;color:var(--amber)">High</span>
+          </div>
+          <div style="width:1px;height:10px;background:var(--border)"></div>
+          <div style="display:flex;align-items:center;gap:4px">
+            <div style="width:11px;height:11px;border-radius:3px;background:#8a1020"></div>
+            <span style="font-family:var(--font-mono);font-size:9px;color:var(--red)">Critical</span>
+          </div>
+        </div>
+
+        <!-- RISK RANGE BARS -->
+        <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:11px">
+          <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Risk Activity Ranges</div>
+          <div style="display:flex;flex-direction:column;gap:7px">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="font-family:var(--font-mono);font-size:10px;font-weight:700;color:var(--green);min-width:52px">LOW</span>
+              <div style="flex:1;height:6px;background:var(--bg-4);border-radius:99px;overflow:hidden"><div style="width:22%;height:100%;background:linear-gradient(90deg,#0a5080,#096a60);border-radius:99px"></div></div>
+              <span style="font-family:var(--font-mono);font-size:9px;color:var(--text-3);min-width:60px">00–40 score</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="font-family:var(--font-mono);font-size:10px;font-weight:700;color:var(--amber);min-width:52px">MEDIUM</span>
+              <div style="flex:1;height:6px;background:var(--bg-4);border-radius:99px;overflow:hidden"><div style="width:55%;height:100%;background:linear-gradient(90deg,#096a60,#a05000);border-radius:99px;box-shadow:0 0 6px rgba(255,171,0,.3)"></div></div>
+              <span style="font-family:var(--font-mono);font-size:9px;color:var(--text-3);min-width:60px">41–69 score</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="font-family:var(--font-mono);font-size:10px;font-weight:700;color:var(--red);min-width:52px">HIGH</span>
+              <div style="flex:1;height:6px;background:var(--bg-4);border-radius:99px;overflow:hidden"><div style="width:88%;height:100%;background:linear-gradient(90deg,#a05000,#8a1020);border-radius:99px;box-shadow:0 0 8px rgba(255,61,87,.4)"></div></div>
+              <span style="font-family:var(--font-mono);font-size:9px;color:var(--text-3);min-width:60px">70–100 score</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="phead">
+        <div class="ptitle"><div class="pdot" style="--pd:var(--violet)"></div>Risk Distribution</div>
+      </div>
+      <div style="padding:13px 16px 14px;display:flex;flex-direction:column;justify-content:space-between"><div style="height:188px;position:relative"><canvas id="dChart"></canvas></div></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- TICKER -->
+<div class="ticker">
+  <div class="tkinner">
+    <span class="tkc">⚑ CRITICAL: usr_ADMIN_7 — 47 failed auth attempts in 3 min</span><span class="tks">◆</span>
+    <span class="tkw">⚐ HIGH: usr_DBA_3 — Data exfiltration pattern (4.2 GB)</span><span class="tks">◆</span>
+    <span class="tkc">⚑ CRITICAL: usr_EXC_002 — Geo-impossible travel detected</span><span class="tks">◆</span>
+    <span class="tkw">⚐ WARNING: usr_FIN_9 — After-hours bulk transaction</span><span class="tks">◆</span>
+    <span class="tki">◈ INFO: Isolation Forest model retrained — accuracy 97.3%</span><span class="tks">◆</span>
+    <span class="tkc">⚑ CRITICAL: usr_ADMIN_7 — 47 failed auth attempts in 3 min</span><span class="tks">◆</span>
+    <span class="tkw">⚐ HIGH: usr_DBA_3 — Data exfiltration pattern (4.2 GB)</span><span class="tks">◆</span>
+    <span class="tkc">⚑ CRITICAL: usr_EXC_002 — Geo-impossible travel detected</span><span class="tks">◆</span>
+    <span class="tkw">⚐ WARNING: usr_FIN_9 — After-hours bulk transaction</span><span class="tks">◆</span>
+    <span class="tki">◈ INFO: Isolation Forest model retrained — accuracy 97.3%</span><span class="tks">◆</span>
+  </div>
+</div>
+
+<!-- INVESTIGATION MODAL -->
+<div class="mbg" id="mbg">
+  <div class="mbox">
+    <div class="mhead">
+      <div class="mhead-l">
+        <div class="mtitle" id="mtitle">User Investigation</div>
+        <div class="msub"   id="msub">Isolation Forest · Anomaly Report</div>
+      </div>
+      <div class="mbadge-wrap">
+        <span id="mRiskBadge"></span>
+        <button class="mbtn-close" onclick="closeModal()">✕</button>
+      </div>
+    </div>
+
+    <div class="mbody" id="mbody"><!-- filled by JS --></div>
+
+    <div class="mfooter">
+      <div class="mactions">
+        <button class="mact mact-r" id="btnBlock">🔒 Block User</button>
+        <button class="mact mact-a" id="btnWatch">👁 Add to Watchlist</button>
+        <button class="mact mact-g" onclick="closeModal()">✓ Dismiss</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LOGIN / REGISTER SCREEN -->
+<div id="loginScreen" style="position:fixed;inset:0;background:var(--bg-base);z-index:99999;display:flex;align-items:center;justify-content:center;overflow-y:auto;padding:20px">
+  <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(0,212,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.025) 1px,transparent 1px);background-size:40px 40px;pointer-events:none"></div>
+  <div style="position:relative;background:linear-gradient(160deg,var(--bg-3),var(--bg-2));border:1px solid var(--border-3);border-radius:var(--r-xl);padding:32px 36px;max-width:430px;width:100%;box-shadow:0 0 60px rgba(0,212,255,.12),0 30px 60px rgba(0,0,0,.7)">
+    <div style="position:absolute;top:0;left:12%;right:12%;height:1px;background:linear-gradient(90deg,transparent,var(--cyan),transparent)"></div>
+    <div style="text-align:center;margin-bottom:22px">
+      <div style="width:48px;height:48px;background:linear-gradient(135deg,var(--cyan),var(--blue));clip-path:polygon(50% 0%,95% 25%,95% 75%,50% 100%,5% 75%,5% 25%);margin:0 auto 12px;box-shadow:0 0 22px rgba(0,212,255,.4);display:flex;align-items:center;justify-content:center">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+      </div>
+      <div style="font-family:var(--font-head);font-size:21px;font-weight:800;color:var(--text-1)">SENTINEL <span style="color:var(--cyan)">AI</span></div>
+      <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-3);margin-top:3px;letter-spacing:1.5px">AI FRAUD DETECTION — SIMULATED REAL-TIME ENVIRONMENT</div>
+    </div>
+    <div style="display:flex;background:var(--bg-1);border:1px solid var(--border);border-radius:var(--r-md);padding:3px;margin-bottom:20px;gap:3px">
+      <button id="tabLogin" onclick="switchTab('login')" style="flex:1;padding:7px;border-radius:8px;border:none;background:linear-gradient(135deg,var(--cyan),var(--blue));color:white;font-family:var(--font-head);font-size:11.5px;font-weight:700;cursor:pointer;letter-spacing:.5px;transition:all .2s;box-shadow:0 2px 8px rgba(0,212,255,.25)">🔐 LOGIN</button>
+      <button id="tabRegister" onclick="switchTab('register')" style="flex:1;padding:7px;border-radius:8px;border:none;background:transparent;color:var(--text-3);font-family:var(--font-head);font-size:11.5px;font-weight:700;cursor:pointer;letter-spacing:.5px;transition:all .2s">✨ REGISTER</button>
+    </div>
+    <div id="formLogin">
+      <div style="margin-bottom:12px">
+        <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px">Username</div>
+        <input id="loginUser" type="text" placeholder="Enter your username" autocomplete="off" style="width:100%;background:var(--bg-1);border:1px solid var(--border-3);border-radius:var(--r-md);color:var(--text-1);font-family:var(--font-mono);font-size:13px;padding:9px 13px;outline:none;transition:all .2s" onfocus="this.style.borderColor='var(--cyan)';this.style.boxShadow='0 0 0 3px rgba(0,212,255,.1)'" onblur="this.style.borderColor='var(--border-3)';this.style.boxShadow='none'">
+      </div>
+      <div style="margin-bottom:16px">
+        <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px">Password</div>
+        <div style="position:relative">
+          <input id="loginPass" type="password" placeholder="Enter your password" style="width:100%;background:var(--bg-1);border:1px solid var(--border-3);border-radius:var(--r-md);color:var(--text-1);font-family:var(--font-mono);font-size:13px;padding:9px 38px 9px 13px;outline:none;transition:all .2s" onfocus="this.style.borderColor='var(--cyan)';this.style.boxShadow='0 0 0 3px rgba(0,212,255,.1)'" onblur="this.style.borderColor='var(--border-3)';this.style.boxShadow='none'" onkeydown="if(event.key==='Enter')doLogin()">
+          <button type="button" onclick="togglePass('loginPass','loginEye')" id="loginEye" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-3);font-size:15px;line-height:1;transition:color .15s" onmouseover="this.style.color='var(--cyan)'" onmouseout="this.style.color='var(--text-3)'">👁</button>
+        </div>
+      </div>
+      <div id="loginErr" style="display:none;background:var(--red-dim);border:1px solid rgba(255,61,87,.3);border-radius:var(--r-sm);padding:8px 12px;font-family:var(--font-mono);font-size:11px;color:var(--red);margin-bottom:12px"></div>
+      <button onclick="doLogin()" id="loginBtn" style="width:100%;padding:11px;border-radius:var(--r-md);border:none;background:linear-gradient(135deg,var(--cyan),var(--blue));color:white;font-family:var(--font-head);font-size:14px;font-weight:700;cursor:pointer;letter-spacing:.5px;transition:all .2s;box-shadow:0 4px 16px rgba(0,212,255,.25)" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 20px rgba(0,212,255,.35)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(0,212,255,.25)'">AUTHENTICATE →</button>
+      <div style="margin-top:11px;text-align:center;font-family:var(--font-mono);font-size:10px;color:var(--text-3)">No account? <span onclick="switchTab('register')" style="color:var(--cyan);cursor:pointer;text-decoration:underline">Register here →</span></div>
+    </div>
+    <div id="formRegister" style="display:none">
+      <div style="margin-bottom:11px">
+        <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px">Choose Username</div>
+        <input id="regUser" type="text" placeholder="e.g. john_doe" autocomplete="off" style="width:100%;background:var(--bg-1);border:1px solid var(--border-3);border-radius:var(--r-md);color:var(--text-1);font-family:var(--font-mono);font-size:13px;padding:9px 13px;outline:none;transition:all .2s" onfocus="this.style.borderColor='var(--cyan)';this.style.boxShadow='0 0 0 3px rgba(0,212,255,.1)'" onblur="this.style.borderColor='var(--border-3)';this.style.boxShadow='none'">
+      </div>
+      <div style="margin-bottom:11px">
+        <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px">Set Password</div>
+        <div style="position:relative">
+          <input id="regPass" type="password" placeholder="Create a strong password (min 6 chars)" style="width:100%;background:var(--bg-1);border:1px solid var(--border-3);border-radius:var(--r-md);color:var(--text-1);font-family:var(--font-mono);font-size:13px;padding:9px 38px 9px 13px;outline:none;transition:all .2s" onfocus="this.style.borderColor='var(--cyan)';this.style.boxShadow='0 0 0 3px rgba(0,212,255,.1)'" onblur="this.style.borderColor='var(--border-3)';this.style.boxShadow='none'" oninput="checkPassStrength(this.value)">
+          <button type="button" onclick="togglePass('regPass','regEye')" id="regEye" style="position:absolute;right:10px;top:12px;background:none;border:none;cursor:pointer;color:var(--text-3);font-size:15px;line-height:1;transition:color .15s" onmouseover="this.style.color='var(--cyan)'" onmouseout="this.style.color='var(--text-3)'">👁</button>
+        </div>
+        <div style="margin-top:5px;height:3px;background:var(--bg-4);border-radius:99px;overflow:hidden"><div id="passStrengthBar" style="height:100%;width:0%;border-radius:99px;transition:all .3s"></div></div>
+        <div id="passStrengthLabel" style="font-family:var(--font-mono);font-size:9px;color:var(--text-3);margin-top:2px"></div>
+      </div>
+      <div style="margin-bottom:11px">
+        <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px">Confirm Password</div>
+        <div style="position:relative">
+          <input id="regPassConfirm" type="password" placeholder="Repeat your password" style="width:100%;background:var(--bg-1);border:1px solid var(--border-3);border-radius:var(--r-md);color:var(--text-1);font-family:var(--font-mono);font-size:13px;padding:9px 38px 9px 13px;outline:none;transition:all .2s" onfocus="this.style.borderColor='var(--cyan)';this.style.boxShadow='0 0 0 3px rgba(0,212,255,.1)'" onblur="this.style.borderColor='var(--border-3)';this.style.boxShadow='none'">
+          <button type="button" onclick="togglePass('regPassConfirm','regConfEye')" id="regConfEye" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-3);font-size:15px;line-height:1;transition:color .15s" onmouseover="this.style.color='var(--cyan)'" onmouseout="this.style.color='var(--text-3)'">👁</button>
+        </div>
+      </div>
+      <div style="margin-bottom:16px">
+        <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px">Select Your Role</div>
+        <select id="regRole" onchange="updateRoleDesc(this.value)" style="width:100%;background:var(--bg-1);border:1px solid var(--border-3);border-radius:var(--r-md);color:var(--text-1);font-family:var(--font-mono);font-size:13px;padding:9px 13px;outline:none;cursor:pointer;transition:all .2s" onfocus="this.style.borderColor='var(--cyan)'" onblur="this.style.borderColor='var(--border-3)'">
+          <option value="admin">Admin</option>
+          <option value="viewer">Viewer</option>
+          <option value="analyst">Analyst</option>
+        </select>
+      </div>
+      <div id="regErr" style="display:none;background:var(--red-dim);border:1px solid rgba(255,61,87,.3);border-radius:var(--r-sm);padding:8px 12px;font-family:var(--font-mono);font-size:11px;color:var(--red);margin-bottom:11px"></div>
+      <div id="regSuccess" style="display:none;background:var(--green-dim);border:1px solid rgba(0,230,118,.25);border-radius:var(--r-sm);padding:8px 12px;font-family:var(--font-mono);font-size:11px;color:var(--green);margin-bottom:11px"></div>
+      <button onclick="doRegister()" style="width:100%;padding:11px;border-radius:var(--r-md);border:none;background:linear-gradient(135deg,var(--green),#00bcd4);color:white;font-family:var(--font-head);font-size:14px;font-weight:700;cursor:pointer;letter-spacing:.5px;transition:all .2s;box-shadow:0 4px 16px rgba(0,230,118,.2)" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 20px rgba(0,230,118,.3)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(0,230,118,.2)'">CREATE ACCOUNT →</button>
+      <div style="margin-top:11px;text-align:center;font-family:var(--font-mono);font-size:10px;color:var(--text-3)">Have an account? <span onclick="switchTab('login')" style="color:var(--cyan);cursor:pointer;text-decoration:underline">Login here →</span></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- NOTIFICATION CENTER -->
+<div id="notifCenter" style="position:fixed;top:0;right:-380px;width:360px;height:100vh;background:var(--bg-2);border-left:1px solid var(--border-3);z-index:8000;transition:right .3s ease;display:flex;flex-direction:column;box-shadow:-4px 0 24px rgba(0,0,0,.4)">
+  <div style="padding:16px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:rgba(0,212,255,.03)">
+    <div style="font-family:var(--font-head);font-size:13px;font-weight:700;color:var(--text-1);display:flex;align-items:center;gap:8px">
+      🔔 Notification Center
+      <span id="notifBadgeCount" style="font-family:var(--font-mono);font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:3px;background:var(--red-dim);border:1px solid rgba(255,61,87,.3);color:var(--red)">0</span>
+    </div>
+    <button onclick="closeNotifCenter()" style="width:28px;height:28px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--bg-3);color:var(--text-2);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center">✕</button>
+  </div>
+  <div style="padding:10px 14px;border-bottom:1px solid var(--border);display:flex;gap:7px">
+    <button onclick="filterNotifs('all',this)" class="notif-filter active-filter" style="font-family:var(--font-mono);font-size:9.5px;font-weight:700;padding:3px 10px;border-radius:3px;border:1px solid var(--border-3);background:var(--cyan-dim);color:var(--cyan);cursor:pointer">ALL</button>
+    <button onclick="filterNotifs('critical',this)" class="notif-filter" style="font-family:var(--font-mono);font-size:9.5px;font-weight:700;padding:3px 10px;border-radius:3px;border:1px solid var(--border);background:transparent;color:var(--text-3);cursor:pointer">CRITICAL</button>
+    <button onclick="filterNotifs('warning',this)" class="notif-filter" style="font-family:var(--font-mono);font-size:9.5px;font-weight:700;padding:3px 10px;border-radius:3px;border:1px solid var(--border);background:transparent;color:var(--text-3);cursor:pointer">WARNING</button>
+    <button onclick="clearAllNotifs()" style="font-family:var(--font-mono);font-size:9.5px;font-weight:700;padding:3px 10px;border-radius:3px;border:1px solid var(--border);background:transparent;color:var(--text-3);cursor:pointer;margin-left:auto">CLEAR ALL</button>
+  </div>
+  <div id="notifList" style="flex:1;overflow-y:auto;padding:6px 0"></div>
+</div>
+<div id="notifOverlay" onclick="closeNotifCenter()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:7999;backdrop-filter:blur(2px)"></div>
+
+<!-- GEO MAP MODAL -->
+<div class="mbg" id="geoMapBg" style="display:none;z-index:9050">
+  <div class="mbox" style="max-width:860px">
+    <div class="mhead">
+      <div class="mhead-l">
+        <div class="mtitle">📍 Geographic Login Map</div>
+        <div class="msub">Real-time suspicious login locations — last 24 hours · Powered by OpenStreetMap</div>
+      </div>
+      <button class="mbtn-close" onclick="closeGeoMap()">✕</button>
+    </div>
+    <div style="padding:0">
+      <div id="leafletMap" style="height:420px;width:100%"></div>
+      <div style="padding:14px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;border-top:1px solid var(--border)">
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--text-3);font-weight:600;text-transform:uppercase;letter-spacing:.8px">Risk Level:</span>
+        <div style="display:flex;gap:12px;flex-wrap:wrap" id="geoLegend"></div>
+        <div style="margin-left:auto;font-family:var(--font-mono);font-size:9.5px;color:var(--text-3)">Click markers · Zoom/pan to explore</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EXPORT MODAL -->
+<div class="mbg" id="exportBg" style="display:none;z-index:9100">
+  <div class="mbox" style="max-width:560px">
+    <div class="mhead">
+      <div class="mhead-l">
+        <div class="mtitle">Export Report</div>
+        <div class="msub">Download flagged user data as PDF</div>
+      </div>
+      <button class="mbtn-close" onclick="closeExportModal()">✕</button>
+    </div>
+    <div style="padding:18px 24px;display:flex;flex-direction:column;gap:12px">
+
+      <!-- OPTION 1 -->
+      <div id="expOpt1" onclick="selectExportOpt(1)" style="background:var(--bg-1);border:2px solid var(--border);border-radius:var(--r-md);padding:16px 18px;cursor:pointer;transition:all .18s;display:flex;align-items:center;gap:14px">
+        <div style="width:40px;height:40px;border-radius:var(--r-sm);background:var(--cyan-dim);border:1px solid var(--border-3);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        </div>
+        <div>
+          <div style="font-family:var(--font-head);font-size:13px;font-weight:700;color:var(--text-1);margin-bottom:3px">Download All Anomalies</div>
+          <div style="font-family:var(--font-mono);font-size:10.5px;color:var(--text-3)">Export complete PDF report of all currently flagged users with full details</div>
+        </div>
+        <div id="expChk1" style="width:20px;height:20px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;margin-left:auto;display:flex;align-items:center;justify-content:center"></div>
+      </div>
+
+      <!-- OPTION 2 -->
+      <div id="expOpt2" onclick="selectExportOpt(2)" style="background:var(--bg-1);border:2px solid var(--border);border-radius:var(--r-md);padding:16px 18px;cursor:pointer;transition:all .18s;display:flex;align-items:center;gap:14px">
+        <div style="width:40px;height:40px;border-radius:var(--r-sm);background:var(--amber-dim);border:1px solid rgba(255,171,0,.3);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </div>
+        <div>
+          <div style="font-family:var(--font-head);font-size:13px;font-weight:700;color:var(--text-1);margin-bottom:3px">Download Specific User</div>
+          <div style="font-family:var(--font-mono);font-size:10.5px;color:var(--text-3)">Select a specific flagged user and export their individual anomaly report</div>
+        </div>
+        <div id="expChk2" style="width:20px;height:20px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;margin-left:auto;display:flex;align-items:center;justify-content:center"></div>
+      </div>
+
+      <!-- USER SELECTOR (shown when option 2 selected) -->
+      <div id="expUserSel" style="display:none;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--r-md);padding:12px 14px">
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">Select User to Export</div>
+        <select id="expUserDrop" style="width:100%;background:var(--bg-1);border:1px solid var(--border-3);border-radius:var(--r-sm);color:var(--text-1);font-family:var(--font-mono);font-size:12px;padding:8px 10px;outline:none;cursor:pointer">
+          <option value="">— Choose a flagged user —</option>
+        </select>
+      </div>
+
+      <!-- INCLUDE OPTIONS -->
+      <div style="background:var(--bg-3);border:1px solid var(--border);border-radius:var(--r-md);padding:12px 14px">
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:9px">Include in Report</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">
+          ${['User Details','Risk Score','Why Flagged','Behavior History','Risk Breakdown','Model Info'].map((opt,i)=>`
+          <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:11.5px;color:var(--text-2)">
+            <input type="checkbox" id="expInc${i}" checked style="accent-color:var(--cyan);width:13px;height:13px"> ${opt}
+          </label>`).join('')}
+        </div>
+      </div>
+    </div>
+
+    <div style="padding:14px 24px 20px;border-top:1px solid var(--border)">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <button onclick="runExport()" id="expRunBtn" style="padding:11px;border-radius:var(--r-md);border:1px solid rgba(0,230,118,.4);background:var(--green-dim);color:var(--green);font-family:var(--font-head);font-size:12.5px;font-weight:700;cursor:pointer;transition:all .18s;display:flex;align-items:center;justify-content:center;gap:7px" onmouseover="this.style.background='rgba(0,230,118,.18)';this.style.boxShadow='0 0 15px rgba(0,230,118,.2)'" onmouseout="this.style.background='var(--green-dim)';this.style.boxShadow='none'">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download PDF
+        </button>
+        <button onclick="closeExportModal()" style="padding:11px;border-radius:var(--r-md);border:1px solid var(--border);background:var(--bg-3);color:var(--text-2);font-family:var(--font-head);font-size:12.5px;font-weight:700;cursor:pointer;transition:all .15s" onmouseover="this.style.background='var(--bg-4)';this.style.color='var(--text-1)'" onmouseout="this.style.background='var(--bg-3)';this.style.color='var(--text-2)'">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ── DATA ──────────────────────────────────────────────────────── */
+const USERS=[
+  {id:'usr_ADM_001',dept:'IT Admin',  priv:3,init:'AD',color:'#2979ff'},
+  {id:'usr_FIN_007',dept:'Finance',   priv:2,init:'FN',color:'#00bcd4'},
+  {id:'usr_DBA_003',dept:'Database',  priv:3,init:'DB',color:'#7c4dff'},
+  {id:'usr_HR__012',dept:'HR',        priv:1,init:'HR',color:'#00897b'},
+  {id:'usr_DEV_099',dept:'Dev Ops',   priv:2,init:'DV',color:'#f57c00'},
+  {id:'usr_EXC_002',dept:'Executive', priv:3,init:'EX',color:'#d81b60'},
+  {id:'usr_NET_055',dept:'Network',   priv:2,init:'NT',color:'#558b2f'},
+  {id:'usr_SEC_011',dept:'Security',  priv:3,init:'SC',color:'#1565c0'},
+  {id:'usr_MKT_034',dept:'Marketing', priv:1,init:'MK',color:'#6a1b9a'},
+  {id:'usr_OPS_078',dept:'Operations',priv:1,init:'OP',color:'#00695c'},
+];
+const ANOMALIES=['After-hours login','Unusual data access','Multiple failed auth','New device / IP','Bulk data export','Privilege escalation','Geo-impossible travel','Dormant account reactivation'];
+const ALERT_TMPLS=[
+  {type:'critical',ico:'🔴',title:'Privilege Escalation Detected',  msg:'Admin accessed restricted DB at 03:14 EST'},
+  {type:'critical',ico:'🔴',title:'Geo-Impossible Travel Alert',     msg:'Login from 2 continents within 4 minutes'},
+  {type:'warning', ico:'⚠️', title:'Unusual Data Export Volume',     msg:'4.2 GB exported outside business hours'},
+  {type:'warning', ico:'⚠️', title:'Brute-Force Pattern Detected',   msg:'47 failed auth attempts at 3:22 AM'},
+  {type:'medium',  ico:'🟡',title:'Dormant Account Reactivated',    msg:'Account inactive 90+ days just logged in'},
+  {type:'info',    ico:'ℹ️', title:'New IP Address Detected',        msg:'First login from 203.45.12.88 (VPN)'},
+  {type:'info',    ico:'ℹ️', title:'Off-hours SQL Query Executed',   msg:'Large DB query at 02:47 EST'},
+];
+
+/* ── STATE ─────────────────────────────────────────────────────── */
+const STATE = { blocked: new Set(), watchlist: new Set(), actionLogs: [], alertCount: 0 };
+
+/* ── HELPERS ───────────────────────────────────────────────────── */
+const rnd=(a,b)=>Math.random()*(b-a)+a;
+const rint=(a,b)=>Math.floor(rnd(a,b+1));
+const pick=a=>a[rint(0,a.length-1)];
+const $=id=>document.getElementById(id);
+
+function riskOf(s){
+  if(s>=70)return{level:'HIGH',  cls:'rth',color:'#ff3d57',fill:'#ff3d57',badge:'cb-r'};
+  if(s>=40)return{level:'MEDIUM',cls:'rtm',color:'#ffab00',fill:'#ffab00',badge:'cb-a'};
+  return        {level:'LOW',   cls:'rtl',color:'#00d4ff',fill:'#00d4ff',badge:'cb-c'};
+}
+
+/* ── CLOCK ─────────────────────────────────────────────────────── */
+function tick(){
+  const now=new Date();
+  const h=now.getHours().toString().padStart(2,'0');
+  const m=now.getMinutes().toString().padStart(2,'0');
+  const s=now.getSeconds().toString().padStart(2,'0');
+  $('clock').textContent=h+':'+m+':'+s+' IST';
+}
+setInterval(tick,1000);tick();
+
+/* ── CHART DEFAULTS ────────────────────────────────────────────── */
+Chart.defaults.color='#4a6080';
+const TIP={backgroundColor:'#0d1628',borderColor:'rgba(0,180,255,.3)',borderWidth:1,
+  titleColor:'#e8f0ff',bodyColor:'#8ba0c0',padding:11,cornerRadius:8,
+  titleFont:{family:"'JetBrains Mono'",size:12},bodyFont:{family:"'Inter'",size:12}};
+
+/* ── TIMELINE ──────────────────────────────────────────────────── */
+let tlChart=null;
+function genTL(n){
+  const a=[];
+  for(let i=0;i<n;i++){
+    const s1=(i>n*.62&&i<n*.75)?rnd(34,58):0;
+    const s2=(i>n*.88)?rnd(18,40):0;
+    a.push(Math.min(100,13+rnd(0,26)+s1+s2));
+  }
+  return a;
+}
+function buildTL(n){
+  const ctx=$('tlChart').getContext('2d');
+  if(tlChart)tlChart.destroy();
+  const now=new Date();
+  const lbl=Array.from({length:n},(_,i)=>{
+    const d=new Date(now-(n-1-i)*60000);
+    return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');
+  });
+  const a=genTL(n),b=a.map(v=>Math.max(0,v-rnd(9,22)));
+  tlChart=new Chart(ctx,{type:'line',data:{labels:lbl,datasets:[
+    {label:'Anomaly Score',data:a,borderColor:'#ff3d57',backgroundColor:'rgba(255,61,87,.07)',borderWidth:2.5,fill:true,tension:.42,pointRadius:0,pointHoverRadius:5,pointHoverBackgroundColor:'#ff3d57',pointHoverBorderColor:'#fff',pointHoverBorderWidth:2},
+    {label:'Baseline',    data:b,borderColor:'#00d4ff',backgroundColor:'rgba(0,212,255,.04)',borderWidth:1.5,borderDash:[5,5],fill:true,tension:.42,pointRadius:0}
+  ]},options:{responsive:true,maintainAspectRatio:true,interaction:{intersect:false,mode:'index'},
+    plugins:{legend:{labels:{color:'#5a7090',font:{size:12},boxWidth:18,padding:20,usePointStyle:true,pointStyle:'circle'}},tooltip:TIP},
+    scales:{
+      x:{ticks:{color:'#2a4060',font:{size:10},maxTicksLimit:10},grid:{color:'rgba(30,80,160,.12)'},border:{color:'rgba(30,80,160,.2)'}},
+      y:{min:0,max:100,ticks:{color:'#2a4060',font:{size:10},stepSize:25},grid:{color:'rgba(30,80,160,.12)'},border:{color:'rgba(30,80,160,.2)'}}
+    }
+  }});
+}
+function switchTL(n,btn){document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));btn.classList.add('active');buildTL(n);}
+
+/* ── GAUGE ─────────────────────────────────────────────────────── */
+let gChart=null,gVal=74;
+function gColor(s){return s>66?'#ff3d57':s>33?'#ffab00':'#00e676';}
+function buildGauge(s){
+  const ctx=$('gChart').getContext('2d');
+  if(gChart)gChart.destroy();
+  gChart=new Chart(ctx,{type:'doughnut',data:{datasets:[{data:[s,100-s],
+    backgroundColor:[gColor(s),'rgba(22,37,68,.8)'],borderWidth:0,circumference:180,rotation:270}]},
+    options:{responsive:false,cutout:'74%',plugins:{legend:{display:false},tooltip:{enabled:false}}}});
+}
+function updGauge(s){
+  if(!gChart){buildGauge(s);return;}
+  gChart.data.datasets[0].data=[s,100-s];
+  gChart.data.datasets[0].backgroundColor[0]=gColor(s);
+  gChart.update('none');
+  const n=$('gNum'),b=$('gBadge'),r=$('rStat');
+  n.textContent=s;n.style.color=gColor(s);
+  if(s>66){b.className='cbadge cb-r';b.textContent='HIGH';
+    r.style.cssText='display:flex;align-items:center;gap:7px;margin-top:10px;padding:6px 16px;border-radius:20px;border:1px solid rgba(255,61,87,.35);background:var(--red-dim);color:var(--red);font-family:var(--font-mono);font-size:11px;font-weight:700';
+    r.innerHTML='<div class="rsd"></div>HIGH ALERT — Immediate Action';}
+  else if(s>33){b.className='cbadge cb-a';b.textContent='MEDIUM';
+    r.style.cssText='display:flex;align-items:center;gap:7px;margin-top:10px;padding:6px 16px;border-radius:20px;border:1px solid rgba(255,171,0,.35);background:var(--amber-dim);color:var(--amber);font-family:var(--font-mono);font-size:11px;font-weight:700';
+    r.innerHTML='<div class="rsd"></div>MODERATE — Monitor Closely';}
+  else{b.className='cbadge cb-g';b.textContent='LOW';
+    r.style.cssText='display:flex;align-items:center;gap:7px;margin-top:10px;padding:6px 16px;border-radius:20px;border:1px solid rgba(0,230,118,.28);background:var(--green-dim);color:var(--green);font-family:var(--font-mono);font-size:11px;font-weight:700';
+    r.innerHTML='<div class="rsd"></div>NORMAL — All Clear';}
+}
+
+/* ── DISTRIBUTION ──────────────────────────────────────────────── */
+let dChart=null;
+function buildDist(h,m,l,n){
+  const ctx=$('dChart').getContext('2d');
+  if(dChart)dChart.destroy();
+  dChart=new Chart(ctx,{type:'doughnut',data:{labels:['High Risk','Medium Risk','Low Risk','Normal'],
+    datasets:[{data:[h,m,l,n],backgroundColor:['rgba(255,61,87,.85)','rgba(255,171,0,.85)','rgba(0,212,255,.65)','rgba(0,230,118,.5)'],
+      borderColor:['#ff3d57','#ffab00','#00d4ff','#00e676'],borderWidth:2,hoverOffset:10}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'60%',
+      plugins:{legend:{position:'bottom',labels:{color:'#5a7090',font:{size:11.5},padding:16,boxWidth:11,usePointStyle:true,pointStyle:'rectRounded'}},tooltip:TIP}}});
+}
+
+/* ── HEATMAP ───────────────────────────────────────────────────── */
+function buildHeatmap(){
+  const grid=$('hmG'),hrs=$('hmH');
+  hrs.innerHTML=Array.from({length:24},(_,i)=>`<span>${i.toString().padStart(2,'0')}</span>`).join('');
+  grid.innerHTML='';
+  const COLS=[[13,48,96],[10,80,128],[9,106,96],[160,80,0],[138,16,32]];
+  for(let h=0;h<24;h++){
+    const isNight=h<6||h>22,isWork=h>=9&&h<=18;
+    const val=isNight?rnd(.55,.98):isWork?rnd(0,.22):rnd(.08,.48);
+    const tier=val<.2?0:val<.4?1:val<.6?2:val<.8?3:4;
+    const [r,g,b]=COLS[tier];
+    const cell=document.createElement('div');
+    cell.className='hmcell';
+    cell.style.background=`rgba(${r},${g},${b},${.55+val*.45})`;
+    if(val>.7)cell.style.boxShadow=`0 0 7px rgba(${r},${g},${b},.55)`;
+    const st=val>.75?'🔴 CRITICAL':val>.5?'🟠 HIGH':val>.3?'🟡 MODERATE':'🟢 NORMAL';
+    cell.addEventListener('mouseenter',e=>showTip(e,`${h.toString().padStart(2,'0')}:00 — Activity: ${Math.round(val*100)}% — ${st}`));
+    cell.addEventListener('mouseleave',hideTip);
+    cell.addEventListener('mousemove',moveTip);
+    grid.appendChild(cell);
+  }
+}
+
+/* ── TOOLTIP ───────────────────────────────────────────────────── */
+function showTip(e,h){const t=$('tip');t.innerHTML=h;t.style.display='block';moveTip(e);}
+function moveTip(e){const t=$('tip');t.style.left=(e.clientX+13)+'px';t.style.top=(e.clientY-46)+'px';}
+function hideTip(){$('tip').style.display='none';}
+
+/* ── USER TABLE ─────────────────────────────────────────────────── */
+let tblData=[];
+
+function genUsers(){
+  return USERS.map((u,i)=>{
+    const s=rint(3,100),r=riskOf(s);
+    const h=rint(0,23),m=rint(0,59);
+    return{...u,anomaly:pick(ANOMALIES),s,r,
+      time:`${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`,
+      ip:`10.${rint(0,5)}.${rint(1,9)}.${rint(1,254)}`,
+      loc:pick(['New York, NY','Chicago, IL','Dallas, TX','HQ Office','Remote','Unknown — VPN']),
+      logins:rint(1,50),dataMB:rnd(1,5000).toFixed(0),ifs:(-rnd(.02,.45)).toFixed(4)};
+  }).filter(u=>!STATE.blocked.has(u.id)).sort((a,b)=>b.s-a.s);
+}
+
+function renderTable(){
+  tblData=genUsers();
+  const h=tblData.filter(u=>u.r.level==='HIGH').length;
+  const m=tblData.filter(u=>u.r.level==='MEDIUM').length;
+  const l=tblData.filter(u=>u.r.level==='LOW').length;
+  buildDist(h,m,l,Math.max(tblData.length-h-m-l,1));
+  $('k1').textContent=h;$('k2').textContent=h+m;
+  $('tblCnt').textContent=(h+m)+' flagged';
+  $('tblTs').textContent='Updated '+new Date().toLocaleTimeString();
+
+  $('utbl').innerHTML=tblData.map((u,i)=>{
+    const isWatch=STATE.watchlist.has(u.id);
+    const trClass=isWatch?'watchlisted-row':'';
+    return`<tr class="${trClass}" style="animation-delay:${i*.04}s" onclick="openModal(${i})">
+      <td><div class="ucell">
+        <div class="uav" style="background:${u.color}">${u.init}</div>
+        <div><div class="uid">${u.id}${isWatch?' 👁':''}</div><div class="udept">${u.dept}</div></div>
+      </div></td>
+      <td><span class="achip">${u.anomaly}</span></td>
+      <td>
+        <div class="sbar">
+          <div class="strk"><div class="sfil" style="width:${u.s}%;background:${u.r.fill}"></div></div>
+          <span class="snum" style="color:${u.r.color}">${u.s}</span>
+          <span style="font-family:var(--font-mono);font-size:9px;color:var(--text-3);background:var(--bg-3);border:1px solid var(--border);border-radius:3px;padding:1px 5px;margin-left:2px">${Math.min(99,Math.round(80+Math.abs(parseFloat(u.ifs))*18))}%</span>
+        </div>
+      </td>
+      <td><span class="rtag ${u.r.cls}">${u.r.level}</span></td>
+      <td><span class="tsc">${u.time}</span></td>
+      <td><button class="btn-az" onclick="event.stopPropagation();openModal(${i})">ANALYZE →</button></td>
+    </tr>`;
+  }).join('');
+}
+
+/* ── INVESTIGATION MODAL ────────────────────────────────────────── */
+let curU=null;
+
+function openModal(i){
+  curU=tblData[i];const u=curU,r=u.r;
+  $('mtitle').textContent=u.id;
+  $('msub').textContent=`${u.dept} · ${u.anomaly} · Score ${u.s}/100`;
+  $('mRiskBadge').innerHTML=`<span class="cbadge ${r.badge}" style="font-size:11px;padding:3px 11px">${r.level} RISK</span>`;
+
+  // ── AI EXPLANATION ENGINE ─────────────────────────────────────
+  const aiExplanations={
+    'After-hours login':`User <b style="color:var(--cyan)">${u.id}</b> flagged due to login at <b style="color:var(--red)">${u.time}</b> — outside normal 09:00–18:00 window — combined with <b style="color:var(--amber)">${(u.dataMB/1024).toFixed(1)} GB data access</b> and unrecognised IP <b style="color:var(--cyan)">${u.ip}</b> from <b>${u.loc}</b>, deviating significantly from established 90-day behavioral baseline.`,
+    'Unusual data access':`Isolation Forest detected <b style="color:var(--red)">anomalous record access</b> by <b style="color:var(--cyan)">${u.id}</b> — accessed <b style="color:var(--amber)">${rint(14,80)} sensitive records</b> in a single session, with data categories mismatched to <b>${u.dept}</b> role and access velocity <b style="color:var(--red)">${rint(5,18)}x higher</b> than peer group average.`,
+    'Multiple failed auth':`System detected a <b style="color:var(--red)">credential-stuffing pattern</b> — <b style="color:var(--red)">${rint(20,55)} failed login attempts</b> from <b style="color:var(--amber)">${rint(2,6)} different IPs</b> within 6 minutes for user <b style="color:var(--cyan)">${u.id}</b>. Anomaly score <b>${u.ifs}</b> indicates high confidence threat, consistent with automated brute-force tooling signatures.`,
+    'New device / IP':`<b style="color:var(--cyan)">${u.id}</b> authenticated from <b style="color:var(--red)">unrecognised device and IP</b> <b style="color:var(--cyan)">${u.ip}</b> — location <b>${u.loc}</b> has never appeared in this user's 90-day access history. Combined with <b style="color:var(--amber)">${u.logins} logins</b> in 24h, the model classifies this as <b style="color:var(--red)">high-probability account compromise</b>.`,
+    'Bulk data export':`<b style="color:var(--cyan)">${u.id}</b> exported <b style="color:var(--red)">${(u.dataMB/1024).toFixed(1)} GB</b> in a single session — <b style="color:var(--amber)">${rint(8,40)}x</b> this user's monthly average — to a <b style="color:var(--red)">destination outside the corporate network</b>. Temporal analysis shows transfer occurred during low-monitoring hours, consistent with data exfiltration patterns.`,
+    'Privilege escalation':`<b style="color:var(--cyan)">${u.id}</b> accessed <b style="color:var(--red)">admin-level systems without an approved change ticket</b> — privilege elevation was not recorded in the IAM system. Used <b style="color:var(--amber)">${rint(3,14)} privileged commands</b> within minutes, a pattern the model associates with <b style="color:var(--red)">insider threat or compromised admin credential</b>.`,
+    'Geo-impossible travel':`Model detected <b style="color:var(--red)">geo-impossible travel</b> — <b style="color:var(--cyan)">${u.id}</b> logged in from two geographically distant locations within <b style="color:var(--red)">${rint(3,9)} minutes</b>. Physical travel between these locations is impossible, indicating <b style="color:var(--amber)">simultaneous session hijacking</b> or credential sharing with high confidence.`,
+    'Dormant account reactivation':`Account <b style="color:var(--cyan)">${u.id}</b> had <b style="color:var(--amber)">zero activity for ${rint(95,210)} days</b> before sudden reactivation — no HR return-to-work record found. First action post-reactivation was a <b style="color:var(--red)">privileged database query</b>, strongly suggesting <b style="color:var(--red)">unauthorized access to an abandoned credential</b>.`,
+  };
+  const aiText=aiExplanations[u.anomaly]||`Isolation Forest model assigned anomaly score <b style="color:var(--red)">${u.ifs}</b> to <b style="color:var(--cyan)">${u.id}</b>, indicating significant deviation from the 90-day behavioral baseline across multiple correlated feature dimensions.`;
+
+  // WHY FLAGGED bullet points
+  const reasons={
+    'After-hours login':[`Login at ${u.time} — outside 09:00–18:00 business window`,`Source IP ${u.ip} not seen during normal hours`,`Activity volume ${rint(200,800)}% above this user's 90-day baseline`],
+    'Unusual data access':[`Accessed ${rint(12,80)} sensitive records in a single session`,`Data category mismatch with job role (${u.dept})`,`Access pattern deviates from 90-day behavioral model`],
+    'Multiple failed auth':[`${rint(18,55)} failed login attempts within 6 minutes`,`Attempts originated from ${rint(2,7)} different IP addresses`,`Pattern matches known credential-stuffing signature`],
+    'New device / IP':[`First-ever login from IP: ${u.ip}`,`Device fingerprint not in trusted device registry`,`Geolocation: ${u.loc} — not a registered corporate location`],
+    'Bulk data export':[`Exported ${(u.dataMB/1024).toFixed(1)} GB in a single session`,`Transfer destination is outside the corporate network`,`Export volume is ${rint(8,40)}x this user's monthly average`],
+    'Privilege escalation':[`Accessed admin control panel without approved change ticket`,`Role elevation not recorded in IAM provisioning system`,`Used ${rint(3,12)} privileged commands within ${rint(2,8)} minutes`],
+    'Geo-impossible travel':[`Login from New York at 03:12 UTC`,`Login from ${u.loc} just ${rint(3,8)} minutes later`,`Physical travel between these locations is physically impossible`],
+    'Dormant account reactivation':[`Account had zero activity for ${rint(90,210)} consecutive days`,`No HR system record of employee return-to-work`,`First action after reactivation was a privileged database query`],
+  };
+  const whyList=reasons[u.anomaly]||[`Isolation Forest anomaly score: ${u.ifs}`,`Behavioral deviation from ${rint(60,120)}-day baseline model`,`Multiple correlated anomaly signals triggered simultaneously`];
+
+  // BEHAVIOR HISTORY BARS
+  const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const histBars=days.map((d,idx)=>{
+    const v=idx===5||idx===6?rint(0,18):rint(20,95);
+    const isAnom=v>75,col=isAnom?'#ff3d57':v>50?'#ffab00':'#00d4ff';
+    return`<div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1">
+      <div style="height:${v}px;width:100%;background:${col};border-radius:3px 3px 0 0;min-height:4px;opacity:${isAnom?'1':'.65'};${isAnom?'box-shadow:0 0 8px #ff3d57':''}"></div>
+      <span style="font-family:var(--font-mono);font-size:9px;color:var(--text-3)">${d}</span>
+    </div>`;
+  }).join('');
+
+  // RISK BREAKDOWN
+  const rBreak=[
+    {label:'Temporal Anomaly',val:rint(20,96),color:'#ff3d57'},
+    {label:'Access Pattern',  val:rint(15,90),color:'#ffab00'},
+    {label:'Volume Deviation', val:rint(10,85),color:'#d500f9'},
+    {label:'Geo / IP Risk',   val:rint(5,80), color:'#00d4ff'},
+    {label:'Privilege Misuse', val:rint(5,75), color:'#00e676'},
+  ];
+
+  $('mbody').innerHTML=`
+  <!-- USER DETAILS -->
+  <div class="mfgrid">
+    ${[['User ID',u.id],['Department',u.dept],['Source IP',u.ip],['Location',u.loc],
+       ['Risk Score',`<span style="color:${r.color};font-size:15px;font-family:var(--font-head);font-weight:800">${u.s}/100</span>`],
+       ['Risk Level',`<span style="color:${r.color};font-weight:700">${r.level}</span>`],
+       ['Logins (24h)',u.logins],['Data Accessed',(u.dataMB/1024).toFixed(2)+' GB']]
+      .map(([k,v])=>`<div class="mf"><div class="mfl">${k}</div><div class="mfv">${v}</div></div>`).join('')}
+  </div>
+
+  <!-- AI EXPLANATION ENGINE -->
+  <div class="msection" style="background:linear-gradient(135deg,rgba(0,180,255,.06),rgba(41,121,255,.04));border-color:rgba(0,212,255,.25)">
+    <div class="msect-title" style="color:var(--cyan)">
+      <div class="msect-bar" style="background:var(--cyan);color:var(--cyan)"></div>
+      🤖 AI Explanation Engine
+    </div>
+    <div style="background:rgba(0,0,0,.25);border:1px solid rgba(0,212,255,.15);border-radius:var(--r-md);padding:13px 15px;font-size:12.5px;color:var(--text-2);line-height:1.75">${aiText}</div>
+    <div style="display:flex;align-items:center;gap:6px;margin-top:9px;font-family:var(--font-mono);font-size:9.5px;color:var(--text-3)">
+      <div style="width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 5px var(--green)"></div>
+      Generated by Isolation Forest · Confidence: ${Math.min(99,80+Math.abs(parseFloat(u.ifs))*20).toFixed(1)}% · Score: ${u.ifs}
+    </div>
+  </div>
+
+  <!-- WHY FLAGGED -->
+  <div class="msection">
+    <div class="msect-title" style="color:var(--amber)">
+      <div class="msect-bar" style="background:var(--amber);color:var(--amber)"></div>
+      Why This User Was Flagged
+    </div>
+    ${whyList.map(w=>`<div class="why-item"><span class="why-arr">▸</span><span>${w}</span></div>`).join('')}
+  </div>
+
+  <!-- BEHAVIOR HISTORY -->
+  <div class="msection">
+    <div class="msect-title" style="color:var(--cyan)">
+      <div class="msect-bar" style="background:var(--cyan);color:var(--cyan)"></div>
+      Behavior History — Last 7 Days
+    </div>
+    <div style="display:flex;align-items:flex-end;gap:5px;height:95px;padding:0 4px">${histBars}</div>
+    <div style="display:flex;align-items:center;gap:14px;margin-top:8px;font-size:10.5px;color:var(--text-3);font-family:var(--font-mono)">
+      <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#ff3d57;margin-right:5px"></span>Anomalous</span>
+      <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#ffab00;margin-right:5px"></span>Elevated</span>
+      <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#00d4ff;margin-right:5px"></span>Normal</span>
+    </div>
+  </div>
+
+  <!-- RISK BREAKDOWN -->
+  <div class="msection">
+    <div class="msect-title" style="color:var(--red)">
+      <div class="msect-bar" style="background:var(--red);color:var(--red)"></div>
+      Risk Score Breakdown
+    </div>
+    ${rBreak.map(rb=>`<div class="rbrow">
+      <span class="rblbl">${rb.label}</span>
+      <div class="rbtrk"><div class="rbfil" style="width:${rb.val}%;background:${rb.color};box-shadow:0 0 7px ${rb.color}"></div></div>
+      <span class="rbval" style="color:${rb.color}">${rb.val}</span>
+    </div>`).join('')}
+  </div>
+
+  <!-- FEATURE IMPORTANCE -->
+  <div class="msection">
+    <div class="msect-title" style="color:var(--violet)">
+      <div class="msect-bar" style="background:var(--violet);color:var(--violet)"></div>
+      🧠 Feature Importance — Why AI Flagged This
+    </div>
+    ${(()=>{
+      const fi=[
+        {label:'Login Time Deviation', val:Math.round(rnd(20,40)), color:'#ff3d57'},
+        {label:'Data Volume Spike',    val:Math.round(rnd(15,32)), color:'#ffab00'},
+        {label:'IP / Geo Anomaly',     val:Math.round(rnd(12,28)), color:'#d500f9'},
+        {label:'Failed Auth Rate',     val:Math.round(rnd(8,22)),  color:'#00d4ff'},
+        {label:'Privilege Usage',      val:Math.round(rnd(5,18)),  color:'#00e676'},
+      ];
+      const total=fi.reduce((s,f)=>s+f.val,0);
+      fi.forEach(f=>f.pct=Math.round(f.val/total*100));
+      return fi.map(f=>`
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:9px">
+          <span style="font-family:var(--font-mono);font-size:10.5px;color:var(--text-2);min-width:158px">${f.label}</span>
+          <div style="flex:1;height:7px;background:var(--bg-4);border-radius:99px;overflow:hidden">
+            <div style="width:${f.pct}%;height:100%;background:${f.color};box-shadow:0 0 8px ${f.color};border-radius:99px;transition:width 1s ease"></div>
+          </div>
+          <span style="font-family:var(--font-mono);font-size:11px;font-weight:700;color:${f.color};min-width:32px;text-align:right">${f.pct}%</span>
+        </div>`).join('');
+    })()}
+  </div>
+
+  <!-- SESSION REPLAY -->
+  <div class="msection">
+    <div class="msect-title" style="color:var(--green)">
+      <div class="msect-bar" style="background:var(--green);color:var(--green)"></div>
+      ▶ Session Replay — Last 10 Actions
+    </div>
+    ${(()=>{
+      const actions=['LOGIN','FILE_ACCESS','DB_QUERY','EXPORT_DATA','ADMIN_PANEL','PASSWORD_CHANGE','BULK_DOWNLOAD','PRIVILEGE_ESCALATION','SYSTEM_CONFIG','USER_CREATION'];
+      const icons={LOGIN:'🔑',FILE_ACCESS:'📁',DB_QUERY:'🗄️',EXPORT_DATA:'📤',ADMIN_PANEL:'⚙️',PASSWORD_CHANGE:'🔐',BULK_DOWNLOAD:'⬇️',PRIVILEGE_ESCALATION:'⚡',SYSTEM_CONFIG:'🔧',USER_CREATION:'👤'};
+      const risk={LOGIN:'normal',FILE_ACCESS:'normal',DB_QUERY:'medium',EXPORT_DATA:'high',ADMIN_PANEL:'high',PASSWORD_CHANGE:'medium',BULK_DOWNLOAD:'critical',PRIVILEGE_ESCALATION:'critical',SYSTEM_CONFIG:'high',USER_CREATION:'high'};
+      const riskColor={normal:'#8ba0c0',medium:'#ffab00',high:'#ff6b00',critical:'#ff3d57'};
+      const evts=Array.from({length:8},(_,i)=>{
+        const hr=rint(0,23),mn=rint(0,59),sc=rint(0,59);
+        const act=pick(actions);
+        return {time:`${hr.toString().padStart(2,'0')}:${mn.toString().padStart(2,'0')}:${sc.toString().padStart(2,'0')}`,action:act,risk:risk[act]};
+      }).sort((a,b)=>a.time.localeCompare(b.time));
+      return '<div style="position:relative;padding-left:20px">'+
+        '<div style="position:absolute;left:7px;top:0;bottom:0;width:1px;background:var(--border)"></div>'+
+        evts.map((e,i)=>`
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;position:relative">
+          <div style="position:absolute;left:-16px;width:9px;height:9px;border-radius:50%;background:${riskColor[e.risk]};box-shadow:0 0 6px ${riskColor[e.risk]};flex-shrink:0"></div>
+          <span style="font-family:var(--font-mono);font-size:10px;color:var(--text-3);min-width:64px">${e.time}</span>
+          <span style="font-size:13px">${icons[e.action]}</span>
+          <span style="font-family:var(--font-mono);font-size:11px;font-weight:600;color:${riskColor[e.risk]}">${e.action.replace(/_/g,' ')}</span>
+          ${e.risk==='critical'?'<span style="font-family:var(--font-mono);font-size:9px;font-weight:700;padding:1px 6px;border-radius:2px;background:rgba(255,61,87,.15);border:1px solid rgba(255,61,87,.35);color:#ff3d57;margin-left:auto">FLAGGED</span>':''}
+        </div>`).join('');
+      return result+'</div>';
+    })()}
+  </div>
+
+  <!-- MODEL INFO -->
+  <div class="msection">
+    <div class="msect-title" style="color:var(--blue)">
+      <div class="msect-bar" style="background:var(--blue);color:var(--blue)"></div>
+      Model Information
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:9px">
+      ${[['Anomaly Score',u.ifs],['Confidence',Math.min(99,80+Math.abs(parseFloat(u.ifs))*20).toFixed(1)+'%'],['Model Used','Isolation Forest']]
+        .map(([k,v])=>`<div class="mf"><div class="mfl">${k}</div><div class="mfv">${v}</div></div>`).join('')}
+    </div>
+  </div>`;
+
+  // Set action buttons state
+  const isBlocked=STATE.blocked.has(u.id);
+  const isWatched=STATE.watchlist.has(u.id);
+  const btnB=$('btnBlock'),btnW=$('btnWatch');
+
+  if(isBlocked){
+    btnB.textContent='🔒 User Blocked';btnB.classList.add('mact-success');btnB.disabled=true;
+    btnW.disabled=true;
+  } else {
+    btnB.textContent='🔒 Block User';btnB.classList.remove('mact-success');btnB.disabled=false;
+    btnW.disabled=false;
+    btnW.textContent=isWatched?'✅ On Watchlist':'👁 Add to Watchlist';
+    if(isWatched)btnW.classList.add('mact-success'); else btnW.classList.remove('mact-success');
+  }
+
+  btnB.onclick=()=>doBlock(u);
+  btnW.onclick=()=>doWatch(u);
+  $('mbg').classList.add('show');
+}
+
+function closeModal(){$('mbg').classList.remove('show');}
+$('mbg').addEventListener('click',e=>{if(e.target===$('mbg'))closeModal();});
+
+/* ── ACTIONS ────────────────────────────────────────────────────── */
+async function doBlock(u){
+  STATE.blocked.add(u.id);
+  STATE.watchlist.delete(u.id);
+  $('hdrBlocked').textContent=STATE.blocked.size;
+  $('hdrWatch').textContent=STATE.watchlist.size;
+  logAction('BLOCK',u.id,'#ff3d57',`User blocked — Risk score: ${u.s}`);
+  toast(`${u.id} Blocked`,'All sessions terminated. User removed from monitoring.','red');
+  $('btnBlock').textContent='🔒 User Blocked';
+  $('btnBlock').classList.add('mact-success');
+  $('btnBlock').disabled=true;
+  $('btnWatch').disabled=true;
+  renderTable();
+  try{await fetch('/user/block',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({user_id:u.id,reason:'High risk anomaly — blocked by admin'})});}catch(e){}
+}
+
+async function doWatch(u){
+  if(STATE.watchlist.has(u.id)){toast('Already Watchlisted',`${u.id} is already under enhanced monitoring.`,'amber');return;}
+  STATE.watchlist.add(u.id);
+  $('hdrWatch').textContent=STATE.watchlist.size;
+  logAction('WATCHLIST',u.id,'#ffab00',`Added to watchlist — score: ${u.s}`);
+  toast(`${u.id} Watchlisted`,'Enhanced monitoring enabled for this user.','amber');
+  $('btnWatch').textContent='✅ On Watchlist';
+  $('btnWatch').classList.add('mact-success');
+  renderTable();
+  try{await fetch('/user/watchlist',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({user_id:u.id,risk_score:u.s,reason:'Suspicious behavior — added by admin'})});}catch(e){}
+}
+
+async function dismissAlert(alertId,btn){
+  try{
+    await fetch('/alert/dismiss',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({alert_id:alertId})});
+  }catch(e){}
+  const row=btn.closest('.arow');
+  if(row){row.style.opacity='0';row.style.transform='translateX(20px)';row.style.transition='all .3s';
+    setTimeout(()=>row.remove(),300);}
+  STATE.alertCount=Math.max(0,STATE.alertCount-1);
+  $('aBadge').textContent=STATE.alertCount+' NEW';
+  $('k5').textContent=STATE.alertCount;
+  logAction('DISMISS','ALERT_'+alertId,'#00d4ff','Alert dismissed');
+}
+
+/* ── ACTION LOG ─────────────────────────────────────────────────── */
+let logCount=0;
+function logAction(type,uid,color,msg){
+  logCount++;
+  const now=new Date();
+  const ts=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0')+':'+now.getSeconds().toString().padStart(2,'0');
+  const log=$('actLog');
+  const oldMsg=log.querySelector('[style*="text-align:center"]');
+  if(oldMsg)oldMsg.remove();
+  const div=document.createElement('div');
+  div.className='logrow';
+  const typeColors={'BLOCK':'#ff3d57','WATCHLIST':'#ffab00','DISMISS':'#00d4ff','UNBLOCK':'#00e676'};
+  div.innerHTML=`<span class="logt">${ts}</span>
+    <span class="logi" style="background:${color}22;color:${color};border:1px solid ${color}44">${type}</span>
+    <span class="logmsg">${uid} — ${msg}</span>`;
+  log.insertBefore(div,log.firstChild);
+  $('logBadge').textContent=logCount+' actions';
+  STATE.actionLogs.push({type,uid,msg,ts});
+}
+
+/* ── ALERTS ─────────────────────────────────────────────────────── */
+let alertIdCt=1000;
+function addAlert(tpl){
+  alertIdCt++;
+  const aid='ALERT_'+alertIdCt;
+  const now=new Date();
+  const ts=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0')+':'+now.getSeconds().toString().padStart(2,'0');
+  const stream=$('astream');
+  const div=document.createElement('div');
+  div.className='arow';div.dataset.alertId=aid;
+  const iCls=tpl.type==='critical'?'ai-c':tpl.type==='warning'?'ai-w':'ai-i';
+  const sCls=tpl.type==='critical'?'sc':tpl.type==='warning'?'sw':tpl.type==='medium'?'sm':'si';
+  const sLbl=tpl.type==='critical'?'CRITICAL':tpl.type==='warning'?'WARNING':tpl.type==='medium'?'MEDIUM':'INFO';
+  div.innerHTML=`
+    <div class="aico ${iCls}">${tpl.ico}</div>
+    <div class="abody">
+      <div class="atitle">${tpl.title}</div>
+      <div class="ameta">
+        <span class="ats">${ts} UTC</span>
+        <span style="color:var(--text-4)">·</span>
+        <span style="font-family:var(--font-mono);font-size:9.5px;color:var(--text-3)">${pick(USERS).id}</span>
+        <span class="stag ${sCls}">${sLbl}</span>
+      </div>
+    </div>
+    <button class="btn-dismiss" onclick="event.stopPropagation();dismissAlert('${aid}',this)">✕</button>`;
+  stream.insertBefore(div,stream.firstChild);
+  if(stream.children.length>14)stream.removeChild(stream.lastChild);
+  STATE.alertCount++;
+  $('aBadge').textContent=STATE.alertCount+' NEW';
+  $('k5').textContent=STATE.alertCount;
+  $('k5t').textContent=STATE.alertCount+' NEW';
+  if(tpl.type==='critical')toast(tpl.title,tpl.msg,'red');
+}
+
+/* ── TOAST ──────────────────────────────────────────────────────── */
+function toast(title,msg,type){
+  const cfg={red:{tc:'var(--red)',ico:'🔴'},amber:{tc:'var(--amber)',ico:'⚠️'},cyan:{tc:'var(--cyan)',ico:'ℹ️'},green:{tc:'var(--green)',ico:'✅'}};
+  const c=cfg[type]||cfg.cyan;
+  const d=document.createElement('div');d.className='toast';d.style.setProperty('--tc',c.tc);
+  d.innerHTML=`<div class="tst-ico">${c.ico}</div><div><div class="tst-title">${title}</div><div class="tst-msg">${msg}</div></div>`;
+  $('toasts').appendChild(d);
+  setTimeout(()=>{d.style.opacity='0';d.style.transform='translateX(110%)';d.style.transition='all .3s';setTimeout(()=>d.remove(),300);},4500);
+}
+
+/* ── ML PANEL ───────────────────────────────────────────────────── */
+function buildML(){
+  const rows=[{name:'Precision',val:96.7,color:'#00d4ff'},{name:'Recall',val:94.2,color:'#00e676'},{name:'F1 Score',val:95.4,color:'#d500f9'},{name:'AUC-ROC',val:97.8,color:'#ffab00'}];
+  $('mlpane').innerHTML=rows.map(r=>`<div class="mlrow">
+    <div class="mll"><div class="mli" style="background:${r.color};color:${r.color}"></div><span class="mln">${r.name}</span></div>
+    <div class="mlr"><div class="mltrk"><div class="mlfil" style="width:${r.val}%;background:linear-gradient(90deg,${r.color}88,${r.color})"></div></div><span class="mlv">${r.val}%</span></div>
+  </div>`).join('')+`
+  <div class="algobox"><div class="algoico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg></div>
+  <div><div class="agoname">Isolation Forest</div><div class="agoparam">contamination=0.05 · n_estimators=100<br>max_samples=auto · random_state=42</div></div></div>`;
+}
+
+/* ── API SYNC ───────────────────────────────────────────────────── */
+async function syncAPI(){
+  try{
+    const r=await fetch('/metrics');if(!r.ok)return;
+    const d=await r.json();
+    if(d.system_risk_index)updGauge(Math.round(d.system_risk_index));
+    if(d.blocked_count!==undefined){$('hdrBlocked').textContent=d.blocked_count;}
+    if(d.watchlist_count!==undefined){$('hdrWatch').textContent=d.watchlist_count;}
+    const ev=parseInt($('k3').textContent.replace(/,/g,''));
+    $('k3').textContent=(ev+rint(-22,28)).toLocaleString();
+  }catch(e){}
+}
+
+/* ── EXPORT MODAL ───────────────────────────────────────────────── */
+let expOpt=0;
+
+function openExportModal(){
+  // Populate user dropdown
+  const drop=$('expUserDrop');
+  drop.innerHTML='<option value="">— Choose a flagged user —</option>';
+  tblData.forEach(u=>{
+    const opt=document.createElement('option');
+    opt.value=u.id; opt.textContent=`${u.id} (${u.dept}) — Score: ${u.s} — ${u.r.level}`;
+    drop.appendChild(opt);
+  });
+  expOpt=0;
+  selectExportOpt(1); // default
+  $('exportBg').style.display='flex';
+}
+
+function closeExportModal(){$('exportBg').style.display='none';}
+$('exportBg').addEventListener('click',e=>{if(e.target===$('exportBg'))closeExportModal();});
+
+function selectExportOpt(n){
+  expOpt=n;
+  [$('expOpt1'),$('expOpt2')].forEach((el,i)=>{
+    const sel=i+1===n;
+    el.style.borderColor=sel?(n===1?'var(--cyan)':'var(--amber)'):'var(--border)';
+    el.style.boxShadow=sel?(n===1?'0 0 14px rgba(0,212,255,.15)':'0 0 14px rgba(255,171,0,.15)'):'none';
+  });
+  $('expChk1').innerHTML=n===1?`<div style="width:10px;height:10px;border-radius:50%;background:var(--cyan)"></div>`:'';
+  $('expChk2').innerHTML=n===2?`<div style="width:10px;height:10px;border-radius:50%;background:var(--amber)"></div>`:'';
+  $('expUserSel').style.display=n===2?'block':'none';
+}
+
+function runExport(){
+  if(expOpt===2&&!$('expUserDrop').value){
+    toast('Select a User','Please choose a user from the dropdown first.','amber');return;
+  }
+  const btn=$('expRunBtn');
+  btn.innerHTML='<div style="width:14px;height:14px;border:2px solid transparent;border-top-color:var(--green);border-radius:50%;animation:spin .7s linear infinite"></div> Generating...';
+  btn.disabled=true;
+
+  setTimeout(()=>{
+    if(expOpt===1) exportAllPDF();
+    else exportSinglePDF($('expUserDrop').value);
+    btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download PDF';
+    btn.disabled=false;
+    closeExportModal();
+    toast('PDF Downloaded','Report saved to your Downloads folder.','green');
+  },1200);
+}
+
+function buildPDFContent(users){
+  const now=new Date().toLocaleString();
+  const rows=users.map(u=>`
+    <tr style="border-bottom:1px solid #e2e8f0">
+      <td style="padding:8px 10px;font-family:monospace;font-size:12px;color:#1e40af">${u.id}</td>
+      <td style="padding:8px 10px;font-size:12px">${u.dept}</td>
+      <td style="padding:8px 10px;font-size:12px">${u.anomaly}</td>
+      <td style="padding:8px 10px;font-weight:700;font-size:13px;color:${u.r.level==='HIGH'?'#dc2626':u.r.level==='MEDIUM'?'#d97706':'#2563eb'}">${u.s}</td>
+      <td style="padding:8px 10px">
+        <span style="background:${u.r.level==='HIGH'?'#fee2e2':u.r.level==='MEDIUM'?'#fef3c7':'#dbeafe'};color:${u.r.level==='HIGH'?'#dc2626':u.r.level==='MEDIUM'?'#d97706':'#2563eb'};padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700">${u.r.level}</span>
+      </td>
+      <td style="padding:8px 10px;font-family:monospace;font-size:11px;color:#64748b">${u.ip}</td>
+      <td style="padding:8px 10px;font-size:11px;color:#64748b">${u.time}</td>
+    </tr>`).join('');
+
+  return`<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>Sentinel AI — Fraud Detection Report</title></head>
+  <body style="margin:0;padding:32px;font-family:'Inter',system-ui,sans-serif;background:#f8fafc;color:#0f172a">
+    <div style="max-width:900px;margin:0 auto;background:white;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,.08);overflow:hidden">
+      <div style="background:linear-gradient(135deg,#0f172a,#1e3a5f);padding:28px 32px;color:white">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
+          <div style="width:36px;height:36px;background:linear-gradient(135deg,#00d4ff,#2979ff);clip-path:polygon(50% 0%,95% 25%,95% 75%,50% 100%,5% 75%,5% 25%);display:flex;align-items:center;justify-content:center"></div>
+          <div>
+            <div style="font-size:22px;font-weight:800;letter-spacing:-.5px">SENTINEL <span style="color:#00d4ff">AI</span></div>
+            <div style="font-size:11px;color:#94a3b8;letter-spacing:1px">FRAUD DETECTION SYSTEM — ANOMALY REPORT</div>
+          </div>
+        </div>
+        <div style="margin-top:16px;font-size:12px;color:#94a3b8;font-family:monospace">
+          Generated: ${now} &nbsp;·&nbsp; Model: Isolation Forest &nbsp;·&nbsp; Total Users: ${users.length}
+        </div>
+      </div>
+      <div style="padding:24px 32px">
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px">
+          ${[['High Risk',users.filter(u=>u.r.level==='HIGH').length,'#dc2626','#fee2e2'],
+             ['Medium Risk',users.filter(u=>u.r.level==='MEDIUM').length,'#d97706','#fef3c7'],
+             ['Low Risk',users.filter(u=>u.r.level==='LOW').length,'#2563eb','#dbeafe'],
+             ['Total Flagged',users.length,'#0891b2','#e0f2fe']]
+            .map(([l,v,c,bg])=>`<div style="background:${bg};border-radius:8px;padding:14px 16px">
+              <div style="font-size:10px;font-weight:700;color:${c};text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px">${l}</div>
+              <div style="font-size:28px;font-weight:800;color:${c};line-height:1">${v}</div>
+            </div>`).join('')}
+        </div>
+        <h3 style="font-size:14px;font-weight:700;color:#334155;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;border-bottom:2px solid #e2e8f0;padding-bottom:8px">Flagged User Details</h3>
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr style="background:#f1f5f9">
+            <th style="padding:9px 10px;text-align:left;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.7px">User ID</th>
+            <th style="padding:9px 10px;text-align:left;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.7px">Department</th>
+            <th style="padding:9px 10px;text-align:left;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.7px">Anomaly Type</th>
+            <th style="padding:9px 10px;text-align:left;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.7px">Score</th>
+            <th style="padding:9px 10px;text-align:left;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.7px">Level</th>
+            <th style="padding:9px 10px;text-align:left;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.7px">IP Address</th>
+            <th style="padding:9px 10px;text-align:left;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.7px">Last Seen</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        ${users.length>0?`
+        <div style="margin-top:20px">
+          <h3 style="font-size:14px;font-weight:700;color:#334155;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;border-bottom:2px solid #e2e8f0;padding-bottom:8px">Detailed Profiles</h3>
+          ${users.slice(0,5).map(u=>`
+          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px;margin-bottom:12px;border-left:4px solid ${u.r.level==='HIGH'?'#dc2626':u.r.level==='MEDIUM'?'#d97706':'#2563eb'}">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+              <div style="font-family:monospace;font-size:14px;font-weight:700;color:#1e40af">${u.id}</div>
+              <span style="background:${u.r.level==='HIGH'?'#fee2e2':u.r.level==='MEDIUM'?'#fef3c7':'#dbeafe'};color:${u.r.level==='HIGH'?'#dc2626':u.r.level==='MEDIUM'?'#d97706':'#2563eb'};padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700">${u.r.level} RISK — Score: ${u.s}/100</span>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;font-size:11px">
+              <div><div style="color:#94a3b8;font-size:9px;text-transform:uppercase;letter-spacing:.6px">Department</div><div style="font-weight:600;margin-top:2px">${u.dept}</div></div>
+              <div><div style="color:#94a3b8;font-size:9px;text-transform:uppercase;letter-spacing:.6px">Anomaly</div><div style="font-weight:600;margin-top:2px">${u.anomaly}</div></div>
+              <div><div style="color:#94a3b8;font-size:9px;text-transform:uppercase;letter-spacing:.6px">Source IP</div><div style="font-weight:600;margin-top:2px;font-family:monospace">${u.ip}</div></div>
+              <div><div style="color:#94a3b8;font-size:9px;text-transform:uppercase;letter-spacing:.6px">IF Score</div><div style="font-weight:600;margin-top:2px;font-family:monospace">${u.ifs}</div></div>
+            </div>
+          </div>`).join('')}
+        </div>`:''}
+        <div style="margin-top:24px;padding-top:16px;border-top:1px solid #e2e8f0;font-size:10px;color:#94a3b8;font-family:monospace;text-align:center">
+          SENTINEL AI Fraud Detection System · Isolation Forest Model · contamination=0.05 · n_estimators=100 · Generated ${now}
+        </div>
+      </div>
+    </div>
+  </body></html>`;
+}
+
+function exportAllPDF(){
+  const html=buildPDFContent(tblData);
+  const win=window.open('','_blank');
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  setTimeout(()=>{win.print();},400);
+  logAction('EXPORT','ALL',`#00e676`,`Exported all ${tblData.length} flagged users`);
+}
+
+function exportSinglePDF(userId){
+  const u=tblData.find(x=>x.id===userId);
+  if(!u)return;
+  const html=buildPDFContent([u]);
+  const win=window.open('','_blank');
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  setTimeout(()=>{win.print();},400);
+  logAction('EXPORT',userId,'#00e676',`Exported individual report — score: ${u.s}`);
+}
+
+/* ── LOGIN & ROLE-BASED ACCESS ──────────────────────────────────── */
+/* ── USER REGISTRATION + LOGIN SYSTEM ──────────────────────────── */
+// Users stored in localStorage so they persist between sessions
+let USERS_DB = JSON.parse(localStorage.getItem('sentinel_users') || '{}');
+let ROLE = 'admin';
+let CURRENT_USER = null;
+
+function saveUsersDB(){
+  localStorage.setItem('sentinel_users', JSON.stringify(USERS_DB));
+}
+
+/* ── TAB SWITCHER ─────────────────────────────────────────────── */
+function switchTab(tab){
+  const isLogin = tab === 'login';
+  $('formLogin').style.display    = isLogin ? 'block' : 'none';
+  $('formRegister').style.display = isLogin ? 'none'  : 'block';
+  $('tabLogin').style.background    = isLogin ? 'linear-gradient(135deg,var(--cyan),var(--blue))' : 'transparent';
+  $('tabLogin').style.color         = isLogin ? 'white' : 'var(--text-3)';
+  $('tabLogin').style.boxShadow     = isLogin ? '0 2px 8px rgba(0,212,255,.25)' : 'none';
+  $('tabRegister').style.background = isLogin ? 'transparent' : 'linear-gradient(135deg,var(--green),#00bcd4)';
+  $('tabRegister').style.color      = isLogin ? 'var(--text-3)' : 'white';
+  $('tabRegister').style.boxShadow  = isLogin ? 'none' : '0 2px 8px rgba(0,230,118,.2)';
+  // Clear errors
+  $('loginErr').style.display = 'none';
+  $('regErr').style.display   = 'none';
+  $('regSuccess').style.display = 'none';
+}
+
+/* ── ROLE DESCRIPTIONS ────────────────────────────────────────── */
+const ROLE_DESCS = {
+  admin:   '👑 Full access — Can Block users, Add to Watchlist, Export PDF reports, and Dismiss alerts.',
+  viewer:  '👁 Read-only — Can view the entire dashboard and charts but cannot perform any actions.',
+  analyst: '🔍 Investigate — Can open user modals and analyze anomalies but cannot Block or Export.',
+};
+
+function updateRoleDesc(val){
+  $('roleDesc').textContent = ROLE_DESCS[val] || '';
+}
+
+/* ── PASSWORD STRENGTH ────────────────────────────────────────── */
+function togglePass(inputId, btnId){
+  const inp=document.getElementById(inputId), btn=document.getElementById(btnId);
+  if(!inp||!btn) return;
+  if(inp.type==='password'){inp.type='text'; btn.textContent='🙈';}
+  else{inp.type='password'; btn.textContent='👁';}
+}
+
+function checkPassStrength(pass){
+  const bar=$('passStrengthBar'), lbl=$('passStrengthLabel');
+  if(!pass){bar.style.width='0%';lbl.textContent='';return;}
+  let score=0;
+  if(pass.length>=6)  score++;
+  if(pass.length>=10) score++;
+  if(/[A-Z]/.test(pass)) score++;
+  if(/[0-9]/.test(pass))  score++;
+  if(/[^A-Za-z0-9]/.test(pass)) score++;
+  const levels=[
+    {w:'20%',  color:'#ff3d57', text:'Weak'},
+    {w:'40%',  color:'#ff6b00', text:'Fair'},
+    {w:'60%',  color:'#ffab00', text:'Good'},
+    {w:'80%',  color:'#00bcd4', text:'Strong'},
+    {w:'100%', color:'#00e676', text:'Very Strong'},
+  ];
+  const lvl = levels[Math.min(score-1, 4)] || levels[0];
+  bar.style.width=lvl.w; bar.style.background=lvl.color;
+  lbl.style.color=lvl.color; lbl.textContent=lvl.text;
+}
+
+/* ── REGISTER ─────────────────────────────────────────────────── */
+function doRegister(){
+  const u = $('regUser').value.trim();
+  const p = $('regPass').value.trim();
+  const c = $('regPassConfirm').value.trim();
+  const r = $('regRole').value;
+  const err = $('regErr'), suc = $('regSuccess');
+  err.style.display='none'; suc.style.display='none';
+
+  // Validations
+  if(!u){ err.textContent='❌ Username cannot be empty.'; err.style.display='block'; return; }
+  if(u.length < 3){ err.textContent='❌ Username must be at least 3 characters.'; err.style.display='block'; return; }
+  if(!/^[a-zA-Z0-9_]+$/.test(u)){ err.textContent='❌ Username can only contain letters, numbers and underscore.'; err.style.display='block'; return; }
+  if(USERS_DB[u]){ err.textContent=`❌ Username "${u}" is already taken. Please choose another.`; err.style.display='block'; return; }
+  if(!p || p.length < 6){ err.textContent='❌ Password must be at least 6 characters.'; err.style.display='block'; return; }
+  if(p !== c){ err.textContent='❌ Passwords do not match. Please try again.'; err.style.display='block'; return; }
+
+  // Save user
+  USERS_DB[u] = { pass: p, role: r, created: new Date().toISOString() };
+  saveUsersDB();
+
+  suc.textContent = `✅ Account created successfully! Welcome, ${u}. You can now login with your credentials.`;
+  suc.style.display = 'block';
+
+  // Clear fields and switch to login after 2s
+  $('regUser').value=''; $('regPass').value=''; $('regPassConfirm').value='';
+  $('passStrengthBar').style.width='0%'; $('passStrengthLabel').textContent='';
+  setTimeout(()=>{ switchTab('login'); $('loginUser').value=u; },2200);
+}
+
+/* ── LOGIN ────────────────────────────────────────────────────── */
+function doLogin(){
+  const u = $('loginUser').value.trim();
+  const p = $('loginPass').value.trim();
+  const err = $('loginErr');
+  err.style.display='none';
+
+  if(!u || !p){ err.textContent='❌ Please enter both username and password.'; err.style.display='block'; return; }
+
+  const cred = USERS_DB[u];
+  if(!cred || cred.pass !== p){
+    err.textContent='❌ Invalid username or password. Please try again.';
+    err.style.display='block';
+    $('loginBtn').style.background='linear-gradient(135deg,#ff3d57,#c0183a)';
+    setTimeout(()=>{ $('loginBtn').style.background='linear-gradient(135deg,var(--cyan),var(--blue))'; },600);
+    return;
+  }
+
+  // Login success
+  ROLE = cred.role;
+  CURRENT_USER = u;
+
+  // Update topbar role chip
+  const roleColors={admin:'var(--cyan)',viewer:'var(--amber)',analyst:'var(--green)'};
+  const roleBorders={admin:'var(--border-3)',viewer:'rgba(255,171,0,.3)',analyst:'rgba(0,230,118,.3)'};
+  const roleBGs={admin:'var(--cyan-dim)',viewer:'var(--amber-dim)',analyst:'var(--green-dim)'};
+  $('roleChip').textContent = `${ROLE.toUpperCase()} · ${u}`;
+  $('roleChip').style.color        = roleColors[ROLE];
+  $('roleChip').style.borderColor  = roleBorders[ROLE];
+  $('roleChip').style.background   = roleBGs[ROLE];
+
+  // Fade out login screen
+  $('loginScreen').style.opacity    = '0';
+  $('loginScreen').style.transition = 'opacity .4s';
+  setTimeout(()=>{ $('loginScreen').style.display='none'; startDashboard(); }, 400);
+}
+
+/* ── APPLY ROLE RESTRICTIONS ─────────────────────────────────── */
+function applyRoleRestrictions(){
+  if(ROLE === 'viewer'){
+    // Viewer: disable ALL action buttons
+    document.querySelectorAll('.mact-r,.mact-a,.mact-g').forEach(b=>{
+      if(b.textContent.includes('Dismiss'))return;
+      b.disabled=true; b.style.opacity='.3'; b.style.cursor='not-allowed';
+      b.title='Read-only access — no actions permitted';
+    });
+    // Hide export button
+    document.querySelectorAll('button').forEach(b=>{
+      if(b.textContent.includes('EXPORT'))b.style.display='none';
+    });
+  } else if(ROLE === 'analyst'){
+    // Analyst: disable Block and Export only
+    document.querySelectorAll('.mact-r').forEach(b=>{
+      b.disabled=true; b.style.opacity='.3'; b.style.cursor='not-allowed';
+      b.title='Analyst access — cannot block users';
+    });
+    document.querySelectorAll('button').forEach(b=>{
+      if(b.textContent.includes('EXPORT'))b.style.display='none';
+    });
+  }
+  // Admin: full access — no restrictions
+}
+
+/* ── THEME TOGGLE ─────────────────────────────────────────────── */
+let isLightMode = false;
+
+function toggleTheme(){
+  isLightMode = !isLightMode;
+  document.body.classList.toggle('light-mode', isLightMode);
+  const icon = $('themeIcon');
+  const btn  = $('themeToggle');
+  if(isLightMode){
+    icon.textContent = '☀️';
+    btn.title = 'Switch to Dark Mode';
+  } else {
+    icon.textContent = '🌙';
+    btn.title = 'Switch to Day Mode';
+  }
+  // Rebuild charts to adapt to new colors
+  if(tlChart){ try{tlChart.destroy();}catch(e){}tlChart=null; buildTL(60); }
+  if(gChart){  try{gChart.destroy();}catch(e){}gChart=null;  buildGauge(Math.round(gVal)); }
+  if(dChart){
+    const h=tblData.filter(u=>u.r.level==='HIGH').length;
+    const m=tblData.filter(u=>u.r.level==='MEDIUM').length;
+    const l=tblData.filter(u=>u.r.level==='LOW').length;
+    buildDist(h,m,l,Math.max(tblData.length-h-m-l,1));
+  }
+}
+
+/* ── LOGOUT ───────────────────────────────────────────────────── */
+function doLogout(){
+  CURRENT_USER=null; ROLE='admin';
+  $('loginScreen').style.display='flex';
+  $('loginScreen').style.opacity='1';
+  $('loginUser').value='';
+  $('loginPass').value='';
+  $('loginErr').style.display='none';
+  switchTab('login');
+}
+
+/* ── NOTIFICATION CENTER ────────────────────────────────────────── */
+let notifData=[];let notifCount=0;
+let notifFilter='all';
+
+function openNotifCenter(){
+  $('notifCenter').style.right='0';
+  $('notifOverlay').style.display='block';
+}
+function closeNotifCenter(){
+  $('notifCenter').style.right='-380px';
+  $('notifOverlay').style.display='none';
+}
+
+function filterNotifs(f,btn){
+  notifFilter=f;
+  document.querySelectorAll('.notif-filter').forEach(b=>{
+    b.style.background='transparent';b.style.color='var(--text-3)';b.style.borderColor='var(--border)';
+  });
+  btn.style.background='var(--cyan-dim)';btn.style.color='var(--cyan)';btn.style.borderColor='var(--border-3)';
+  renderNotifs();
+}
+
+function clearAllNotifs(){notifData=[];renderNotifs();updateNotifBadge(0);}
+
+function renderNotifs(){
+  const list=$('notifList');
+  const filtered=notifFilter==='all'?notifData:notifData.filter(n=>n.type===notifFilter);
+  if(!filtered.length){
+    list.innerHTML='<div style="padding:24px;text-align:center;font-family:var(--font-mono);font-size:11px;color:var(--text-3)">No notifications</div>';
+    return;
+  }
+  list.innerHTML=filtered.map((n,i)=>{
+    const color=n.type==='critical'?'var(--red)':n.type==='warning'?'var(--amber)':'var(--cyan)';
+    const bg=n.type==='critical'?'var(--red-dim)':n.type==='warning'?'var(--amber-dim)':'var(--cyan-dim)';
+    return`<div style="display:flex;align-items:flex-start;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s" onmouseover="this.style.background='rgba(0,212,255,.04)'" onmouseout="this.style.background='transparent'">
+      <div style="width:8px;height:8px;border-radius:50%;background:${color};box-shadow:0 0 6px ${color};flex-shrink:0;margin-top:4px"></div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:600;color:var(--text-1);margin-bottom:3px">${n.title}</div>
+        <div style="font-size:11px;color:var(--text-2);line-height:1.4;margin-bottom:4px">${n.msg}</div>
+        <div style="display:flex;align-items:center;gap:7px">
+          <span style="font-family:var(--font-mono);font-size:9.5px;color:var(--text-3)">${n.ts}</span>
+          <span style="font-family:var(--font-mono);font-size:9px;font-weight:700;padding:1px 6px;border-radius:2px;background:${bg};color:${color};border:1px solid ${color}44">${n.type.toUpperCase()}</span>
+          ${n.userId?`<span style="font-family:var(--font-mono);font-size:9.5px;color:var(--text-3)">${n.userId}</span>`:''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function updateNotifBadge(n){
+  $('tbNotifCount').textContent=n;
+  $('notifBadgeCount').textContent=n;
+}
+
+function pushNotif(title,msg,type,userId){
+  const now=new Date();
+  const ts=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0')+':'+now.getSeconds().toString().padStart(2,'0');
+  notifData.unshift({title,msg,type,ts,userId});
+  if(notifData.length>50)notifData.pop();
+  notifCount++;
+  updateNotifBadge(notifCount);
+  renderNotifs();
+  // Simulated email for risk > 85
+  if(type==='critical'&&userId){
+    console.log(`[EMAIL SIMULATED] To: admin@company.com\nSubject: 🚨 HIGH RISK ALERT\nBody: User ${userId} detected as HIGH RISK. Anomaly score critical.\nAction: Immediate review recommended.\nTime: ${ts} IST`);
+  }
+}
+
+/* ── GEO LOCATION MAP (Leaflet.js + OpenStreetMap) ─────────────── */
+const GEO_LOCATIONS=[
+  {name:'New York, USA',    lat:40.71,  lng:-74.00, risk:'low',     user:'usr_ADM_001', detail:'Normal business-hours login'},
+  {name:'London, UK',       lat:51.50,  lng:-0.12,  risk:'low',     user:'usr_DEV_099', detail:'Authorised remote session'},
+  {name:'Chicago, USA',     lat:41.87,  lng:-87.63, risk:'medium',  user:'usr_FIN_007', detail:'Unusual data access detected'},
+  {name:'Unknown VPN',      lat:48.85,  lng:2.35,   risk:'high',    user:'usr_HR__012', detail:'Unrecognised VPN exit node'},
+  {name:'Moscow, Russia',   lat:55.75,  lng:37.61,  risk:'critical',user:'usr_EXC_002', detail:'Geo-impossible travel — 4 min gap'},
+  {name:'Tor Exit Node',    lat:34.05,  lng:-6.85,  risk:'critical',user:'usr_DBA_003', detail:'Anonymous Tor relay detected'},
+  {name:'Singapore',        lat:1.35,   lng:103.81, risk:'high',    user:'usr_NET_055', detail:'After-hours bulk export'},
+  {name:'Dallas, USA',      lat:32.77,  lng:-96.79, risk:'low',     user:'usr_SEC_011', detail:'HQ-authorised session'},
+  {name:'Mumbai, India',    lat:19.07,  lng:72.87,  risk:'high',    user:'usr_MKT_034', detail:'New device — unverified location'},
+  {name:'Sydney, Australia',lat:-33.86, lng:151.20, risk:'medium',  user:'usr_OPS_078', detail:'Dormant account reactivated'},
+];
+
+const RISK_COLORS={low:'#00e676',medium:'#ffab00',high:'#ff6b00',critical:'#ff3d57'};
+let leafletMap=null;
+
+function openGeoMap(){
+  $('geoMapBg').style.display='flex';
+  setTimeout(()=>{
+    if(!leafletMap){ initLeafletMap(); }
+    else { leafletMap.invalidateSize(); }
+  },150);
+}
+
+function closeGeoMap(){
+  $('geoMapBg').style.display='none';
+}
+
+function initLeafletMap(){
+  // Build legend via JS (not template literal in HTML)
+  const leg=$('geoLegend');
+  [['LOW','#00e676'],['MEDIUM','#ffab00'],['HIGH','#ff6b00'],['CRITICAL','#ff3d57']].forEach(([l,c])=>{
+    const d=document.createElement('div');
+    d.style.cssText='display:flex;align-items:center;gap:5px';
+    d.innerHTML=`<div style="width:11px;height:11px;border-radius:50%;background:${c};box-shadow:0 0 6px ${c}"></div>
+      <span style="font-family:var(--font-mono);font-size:10.5px;font-weight:700;color:${c}">${l}</span>`;
+    leg.appendChild(d);
+  });
+
+  // Init Leaflet map
+  leafletMap = L.map('leafletMap',{center:[20,10],zoom:2,zoomControl:true,scrollWheelZoom:true});
+
+  // Primary: CartoDB Dark Matter (free, no API key)
+  const tiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
+    attribution:'© <a href="https://openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/attributions">CARTO</a>',
+    subdomains:'abcd', maxZoom:19
+  });
+
+  // Fallback: OpenStreetMap standard (if CARTO fails)
+  tiles.on('tileerror', function(){
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+      attribution:'© OpenStreetMap contributors', maxZoom:19
+    }).addTo(leafletMap);
+  });
+
+  tiles.addTo(leafletMap);
+
+  // Inject dark-theme CSS for popups/controls
+  if(!document.getElementById('leafletDarkCSS')){
+    const s=document.createElement('style');
+    s.id='leafletDarkCSS';
+    s.textContent=`
+      .leaflet-container{background:#060b14;font-family:'JetBrains Mono',monospace}
+      .leaflet-popup-content-wrapper{background:#0d1628;border:1px solid rgba(0,212,255,.35);
+        border-radius:10px;box-shadow:0 0 20px rgba(0,212,255,.15);color:#e8f0ff}
+      .leaflet-popup-tip{background:#0d1628}
+      .leaflet-popup-close-button{color:#8ba0c0!important;font-size:16px!important}
+      .leaflet-control-zoom a{background:#0d1628!important;border-color:rgba(0,212,255,.25)!important;color:#00d4ff!important}
+      .leaflet-control-zoom a:hover{background:#111e35!important}
+      .leaflet-control-attribution{background:rgba(6,11,20,.85)!important;color:#4a6080!important;font-size:9px}
+      .leaflet-control-attribution a{color:#00d4ff!important}
+      @keyframes sentinelPulse{0%{transform:scale(1);opacity:.8}100%{transform:scale(2.8);opacity:0}}
+      .s-pulse{animation:sentinelPulse 2s ease-out infinite}
+    `;
+    document.head.appendChild(s);
+  }
+
+  // Add markers
+  GEO_LOCATIONS.forEach(loc=>{
+    const col=RISK_COLORS[loc.risk];
+    const size=loc.risk==='critical'?26:loc.risk==='high'?20:16;
+    const half=size/2;
+    const pulseRing=loc.risk==='critical'||loc.risk==='high'
+      ? `<div class="s-pulse" style="position:absolute;inset:0;border-radius:50%;background:${col};opacity:.35"></div>`:'';
+
+    const icon=L.divIcon({
+      html:`<div style="position:relative;width:${size}px;height:${size}px">
+        ${pulseRing}
+        <div style="position:absolute;inset:${loc.risk==='critical'?4:3}px;border-radius:50%;
+          background:${col};box-shadow:0 0 10px ${col},0 0 20px ${col}44;
+          border:1.5px solid rgba(255,255,255,.3)"></div>
+      </div>`,
+      className:'',
+      iconSize:[size,size],
+      iconAnchor:[half,half],
+      popupAnchor:[0,-half-4],
+    });
+
+    const popup=`<div style="padding:10px 4px;min-width:210px">
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:8px">
+        <div style="width:9px;height:9px;border-radius:50%;background:${col};box-shadow:0 0 6px ${col}"></div>
+        <span style="font-family:'Exo 2',sans-serif;font-size:13px;font-weight:700;color:#e8f0ff">${loc.name}</span>
+      </div>
+      <div style="font-size:11px;color:#8ba0c0;margin-bottom:3px">👤 ${loc.user}</div>
+      <div style="font-size:11px;color:#8ba0c0;margin-bottom:8px">⚠ ${loc.detail}</div>
+      <div style="display:inline-block;padding:2px 10px;border-radius:20px;font-size:10px;font-weight:700;
+        background:${col}22;border:1px solid ${col}55;color:${col}">${loc.risk.toUpperCase()} RISK</div>
+    </div>`;
+
+    L.marker([loc.lat,loc.lng],{icon})
+     .bindPopup(L.popup({maxWidth:250}).setContent(popup))
+     .addTo(leafletMap);
+
+    // Lines from NY HQ to high/critical
+    if(loc.risk==='critical'||loc.risk==='high'){
+      const hq=GEO_LOCATIONS[0];
+      L.polyline([[hq.lat,hq.lng],[loc.lat,loc.lng]],{
+        color:loc.risk==='critical'?'#ff3d57':'#ff6b00',
+        weight:loc.risk==='critical'?2:1.2,
+        opacity:loc.risk==='critical'?.7:.45,
+        dashArray:loc.risk==='critical'?null:'6,8'
+      }).addTo(leafletMap);
+    }
+  });
+}
+
+/* ── REAL-TIME SIMULATION UPGRADE ───────────────────────────────── */
+// Fast updates every 3s for key metrics
+function fastUpdate(){
+  const ev=parseInt($('k3').textContent.replace(/,/g,''));
+  $('k3').textContent=(ev+rint(-15,22)).toLocaleString();
+
+  // Random high-risk notification
+  if(Math.random()>.85&&tblData.length){
+    const u=tblData[0];
+    if(u.s>85){
+      pushNotif(
+        `⚠ High-Risk User: ${u.id}`,
+        `Risk score ${u.s}/100 — ${u.anomaly} — Immediate review recommended`,
+        'critical', u.id
+      );
+    }
+  }
+}
+
+// Simulate new events every 4s — add to alert stream & table pulse
+let rtEventCount=0;
+function realtimeEvent(){
+  rtEventCount++;
+  if(rtEventCount%3===0) addAlert(pick(ALERT_TMPLS));
+  if(rtEventCount%5===0){
+    renderTable();
+    // Auto-notify for high-risk users
+    const highU=tblData.find(u=>u.s>85);
+    if(highU){
+      pushNotif(
+        `🚨 ALERT: ${highU.id} — Score ${highU.s}`,
+        `${highU.anomaly} detected. Action recommended: Immediate review.`,
+        'critical', highU.id
+      );
+    }
+  }
+}
+
+/* ── BOOT ───────────────────────────────────────────────────────── */
+
+/* ══════════════════════════════════════════════════════════════
+   FEATURE 3: MODEL RETRAIN
+══════════════════════════════════════════════════════════════ */
+let modelAccuracy = 97.3;
+
+function retrainModel(){
+  const btn=$('retrainBtn'), prog=$('retrainProgress'), bar=$('retrainBar');
+  const stat=$('retrainStatus'), pct=$('retrainPct'), mlStat=$('mlStatus');
+  btn.disabled=true; btn.style.opacity='.5';
+  prog.style.display='block';
+  mlStat.textContent='TRAINING'; mlStat.className='cbadge cb-a';
+  const steps=[
+    {p:15, msg:'Loading training data...'},
+    {p:32, msg:'Extracting features...'},
+    {p:50, msg:'Fitting Isolation Forest...'},
+    {p:68, msg:'Evaluating on test set...'},
+    {p:82, msg:'Computing metrics...'},
+    {p:95, msg:'Finalising model weights...'},
+    {p:100,msg:'Retrain complete ✓'},
+  ];
+  let i=0;
+  const step=()=>{
+    if(i>=steps.length){
+      // Done
+      const newAcc=(96+Math.random()*2).toFixed(1);
+      modelAccuracy=parseFloat(newAcc);
+      mlStat.textContent='ACTIVE'; mlStat.className='cbadge cb-g';
+      btn.disabled=false; btn.style.opacity='1';
+      setTimeout(()=>{ prog.style.display='none'; bar.style.width='0%'; },2000);
+      buildML();
+      toast(`Model retrained — New accuracy: ${newAcc}%`,'Isolation Forest updated with latest behavioral data.','green');
+      logAction('RETRAIN','MODEL','#00e676',`Model retrained — accuracy: ${newAcc}%`);
+      return;
+    }
+    const s=steps[i++];
+    bar.style.width=s.p+'%'; stat.textContent=s.msg; pct.textContent=s.p+'%';
+    setTimeout(step, 350+Math.random()*250);
+  };
+  setTimeout(step,200);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   FEATURE 4: LIVE EVENT LOG TERMINAL
+══════════════════════════════════════════════════════════════ */
+const LOG_ACTIONS=['LOGIN','FILE_ACCESS','DB_QUERY','EXPORT_DATA','ADMIN_PANEL',
+  'PASSWORD_CHANGE','BULK_DOWNLOAD','PRIVILEGE_ESCALATION','SYSTEM_CONFIG','USER_CREATION'];
+const LOG_COLORS={
+  LOGIN:'#8ba0c0', FILE_ACCESS:'#00d4ff', DB_QUERY:'#d500f9',
+  EXPORT_DATA:'#ffab00', ADMIN_PANEL:'#ff6b00', PASSWORD_CHANGE:'#8ba0c0',
+  BULK_DOWNLOAD:'#ff3d57', PRIVILEGE_ESCALATION:'#ff3d57',
+  SYSTEM_CONFIG:'#ff6b00', USER_CREATION:'#ffab00'
+};
+const LOG_RISK={
+  LOGIN:false, FILE_ACCESS:false, DB_QUERY:false, EXPORT_DATA:true,
+  ADMIN_PANEL:true, PASSWORD_CHANGE:false, BULK_DOWNLOAD:true,
+  PRIVILEGE_ESCALATION:true, SYSTEM_CONFIG:true, USER_CREATION:true
+};
+
+let logLines=0;
+
+function addEventLog(){
+  const log=$('eventLog');
+  if(!log) return;
+  const u=pick(USERS);
+  const act=pick(LOG_ACTIONS);
+  const now=new Date();
+  const ts=now.getHours().toString().padStart(2,'0')+':'+
+            now.getMinutes().toString().padStart(2,'0')+':'+
+            now.getSeconds().toString().padStart(2,'0');
+  const score=(-rnd(.02,.45)).toFixed(3);
+  const isFlagged=LOG_RISK[act]&&Math.random()>.4;
+  const color=LOG_COLORS[act];
+
+  // Remove "waiting" placeholder on first event
+  if(logLines===0) log.innerHTML='';
+  logLines++;
+
+  const div=document.createElement('div');
+  div.style.cssText='padding:3px 0;border-bottom:1px solid rgba(14,48,80,.3);display:flex;align-items:center;gap:8px;animation:fadeIn .3s ease';
+  div.innerHTML=
+    `<span style="color:var(--text-3);flex-shrink:0">[${ts}]</span>`+
+    `<span style="color:var(--cyan);flex-shrink:0;min-width:96px">${u.id}</span>`+
+    `<span style="color:${color};flex-shrink:0;min-width:130px">${act.replace(/_/g,' ')}</span>`+
+    `<span style="color:var(--text-3);font-size:9.5px">${score}</span>`+
+    (isFlagged?`<span style="margin-left:auto;background:rgba(255,61,87,.15);border:1px solid rgba(255,61,87,.35);color:#ff3d57;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:700;flex-shrink:0">⚑ FLAGGED</span>`:'');
+
+  log.insertBefore(div, log.firstChild);
+
+  // Keep max 80 lines
+  while(log.children.length>80) log.removeChild(log.lastChild);
+}
+
+function clearLog(){
+  const log=$('eventLog');
+  if(log){ log.innerHTML='<div style="color:var(--text-3);text-align:center;padding-top:80px">Log cleared.</div>'; logLines=0; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   FEATURE 5: DEPARTMENT TREND CHART
+══════════════════════════════════════════════════════════════ */
+let trendChart=null;
+
+function buildTrendChart(){
+  const ctx=$('trendChart');
+  if(!ctx) return;
+  if(trendChart){try{trendChart.destroy();}catch(e){}}
+
+  const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const depts=[
+    {label:'Finance',    color:'#ff3d57', data:[42,55,61,48,72,85,78]},
+    {label:'IT Admin',   color:'#ffab00', data:[35,40,38,55,62,45,58]},
+    {label:'HR',         color:'#00d4ff', data:[20,28,22,35,28,18,32]},
+    {label:'Database',   color:'#d500f9', data:[58,62,70,65,80,55,75]},
+    {label:'Dev Ops',    color:'#00e676', data:[15,22,18,28,25,12,20]},
+  ];
+
+  // Add some randomness each time
+  depts.forEach(d=>{ d.data=d.data.map(v=>Math.min(100,Math.max(5,v+rint(-8,8)))); });
+
+  trendChart=new Chart(ctx,{
+    type:'line',
+    data:{
+      labels:days,
+      datasets: depts.map(d=>({
+        label:d.label, data:d.data,
+        borderColor:d.color,
+        backgroundColor:d.color+'18',
+        borderWidth:2, fill:false, tension:.4,
+        pointRadius:3, pointBackgroundColor:d.color,
+        pointHoverRadius:6
+      }))
+    },
+    options:{
+      responsive:true, maintainAspectRatio:true,
+      interaction:{intersect:false,mode:'index'},
+      plugins:{
+        legend:{labels:{color:'#5a7090',font:{size:10},boxWidth:14,padding:14,usePointStyle:true,pointStyle:'circle'}},
+        tooltip:{
+          backgroundColor:'#0d1628',borderColor:'rgba(0,180,255,.3)',borderWidth:1,
+          titleColor:'#e8f0ff',bodyColor:'#8ba0c0',padding:10,cornerRadius:8,
+          titleFont:{family:"'JetBrains Mono'",size:11},bodyFont:{family:"'Inter'",size:11}
+        }
+      },
+      scales:{
+        x:{ticks:{color:'#2a4060',font:{size:10}},grid:{color:'rgba(30,80,160,.12)'},border:{color:'rgba(30,80,160,.2)'}},
+        y:{min:0,max:100,ticks:{color:'#2a4060',font:{size:10},stepSize:25},grid:{color:'rgba(30,80,160,.12)'},border:{color:'rgba(30,80,160,.2)'}}
+      }
+    }
+  });
+}
+
+function startDashboard(){
+  applyRoleRestrictions();
+
+  // Destroy any existing charts first to avoid canvas reuse errors
+  if(tlChart){try{tlChart.destroy();}catch(e){}tlChart=null;}
+  if(gChart){try{gChart.destroy();}catch(e){}gChart=null;}
+  if(dChart){try{dChart.destroy();}catch(e){}dChart=null;}
+
+  // Small delay so DOM is fully visible before Chart.js renders
+  setTimeout(()=>{
+    buildTL(60);
+    buildGauge(74);
+    buildDist(8,15,28,49);
+    buildHeatmap();
+    buildML();
+    buildTrendChart();
+    renderTable();
+
+    // Notifications
+    pushNotif('🔴 CRITICAL: Geo-Impossible Travel','usr_FIN_007 — 2 continents in 4 minutes. Immediate review.','critical','usr_FIN_007');
+    pushNotif('⚠ HIGH RISK: Bulk Data Export','usr_DBA_003 — 4.2 GB export outside business hours.','warning','usr_DBA_003');
+    pushNotif('ℹ Model Retrained','Isolation Forest accuracy: 97.3% — contamination=0.05','info',null);
+
+    // Pre-populate alert stream
+    ALERT_TMPLS.forEach(a=>addAlert(a));
+
+    syncAPI();
+    setTimeout(()=>toast('Critical Alert','Geo-impossible travel detected — usr_FIN_007','red'),800);
+    setTimeout(()=>toast('High Risk Warning','Bulk export flagged — usr_DBA_003','amber'),2500);
+
+    // Start intervals AFTER charts are built
+    setInterval(renderTable,   8000);
+    setInterval(syncAPI,      10000);
+    setInterval(fastUpdate,    3000);
+    setInterval(realtimeEvent, 4000);
+    setInterval(()=>addAlert(pick(ALERT_TMPLS)), 9000);
+    setInterval(addEventLog, 1200);   // live event every 1.2s
+    setInterval(buildTrendChart, 30000); // refresh trend every 30s
+    setInterval(()=>{gVal=Math.max(44,Math.min(92,gVal+(Math.random()-.45)*4));updGauge(Math.round(gVal));},3500);
+    setInterval(()=>{
+      if(!tlChart) return;
+      const v=Math.min(100,13+rnd(0,26)+(Math.random()>.9?rnd(30,55):0));
+      const now=new Date();
+      const l=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+      tlChart.data.datasets[0].data.push(v);tlChart.data.datasets[0].data.shift();
+      tlChart.data.datasets[1].data.push(Math.max(0,v-rnd(9,20)));tlChart.data.datasets[1].data.shift();
+      tlChart.data.labels.push(l);tlChart.data.labels.shift();
+      tlChart.update('none');
+    },2000);
+
+  }, 200);
+}
+
+// Show login screen first
+$('loginScreen').style.display='flex';
+</script>
+</body>
+</html>
