@@ -141,37 +141,103 @@ $$R = \text{round}\left(\frac{\text{clamp}(s, -0.5, 0.1) - 0.1}{-0.5 - 0.1} \tim
 
 ---
 
-## ⚡ Getting Started (Local Setup)
+## ⚡ Getting Started (Installation & How to Run)
 
-### 1. Prerequisites
-- **Python 3.10+**
-- **Git**
+Follow these step-by-step instructions to install and run Sentinel AI on your device.
 
-### 2. Clone and Setup Environment
+### 📋 System Prerequisites
+Before you start, make sure you have the following installed on your device:
+- **Python 3.10 or higher** (Check with `python3 --version` or `python --version`)
+- **Git** (Check with `git --version`)
+- **pip** (Python package installer)
+- A modern web browser (Google Chrome, Firefox, Brave, Safari, Edge)
+
+---
+
+### 💻 Step-by-Step Installation Guide
+
+#### Step 1: Clone the Repository
+Open your Terminal (macOS/Linux) or Command Prompt / PowerShell (Windows) and run:
 ```bash
-# Clone repository
 git clone https://github.com/Arnab0513/Sentinel.git
 cd Sentinel
+```
 
-# Create virtual environment
-python3 -m venv .venv
-source .venv/bin/activate   # On Windows: .venv\Scripts\activate
+#### Step 2: Create a Python Virtual Environment
+Creating an isolated environment prevents library version conflicts:
 
-# Install dependencies
+- **On macOS / Linux:**
+  ```bash
+  python3 -m venv .venv
+  ```
+- **On Windows (PowerShell / Command Prompt):**
+  ```bash
+  python -m venv .venv
+  ```
+
+#### Step 3: Activate the Virtual Environment
+- **On macOS / Linux:**
+  ```bash
+  source .venv/bin/activate
+  ```
+- **On Windows (PowerShell):**
+  ```powershell
+  .venv\Scripts\Activate.ps1
+  ```
+  *(If PowerShell gives an execution policy error, run `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` first).*
+- **On Windows (Command Prompt `cmd.exe`):**
+  ```cmd
+  .venv\Scripts\activate.bat
+  ```
+*(When activated, your terminal prompt will show `(.venv)`).*
+
+#### Step 4: Install Dependencies
+Install all required libraries (Flask, Scikit-Learn, NumPy, Pandas, Gunicorn, etc.):
+```bash
+pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-### 3. Run the Sentinel Backend
-```bash
-python3 backend/app.py
-```
-*The Flask server starts at `http://127.0.0.1:8080`.*
+---
 
-### 4. Launch the Dashboard
+### 🚀 Launching the Application
+
+#### Step 5: Start the Sentinel Server
+Run the Flask backend server:
+- **On macOS / Linux:**
+  ```bash
+  python3 backend/app.py
+  ```
+- **On Windows:**
+  ```bash
+  python backend/app.py
+  ```
+
+Upon startup, you will see:
+```text
+[SENTINEL] Training Isolation Forest model...
+[SENTINEL] Model ready.
+ * Serving Flask app 'backend.app'
+ * Debug mode: on
+ * Running on http://127.0.0.1:8080 (Press CTRL+C to quit)
+```
+
+#### Step 6: Open the Dashboard
 Open your browser and navigate to:
-```
-http://127.0.0.1:8080
-```
+👉 **[http://localhost:8080](http://localhost:8080)** or **[http://127.0.0.1:8080](http://127.0.0.1:8080)**
+
+---
+
+### 🛠️ Troubleshooting & Tips
+
+- **Port 8080 already in use?**
+  You can run on any custom port by specifying the `PORT` variable:
+  - macOS/Linux: `PORT=5000 python3 backend/app.py`
+  - Windows (PowerShell): `$env:PORT="5000"; python backend/app.py`
+  - Windows (CMD): `set PORT=5000 && python backend/app.py`
+- **Instant Browser Demo (No Installation Required):**
+  You can also interact with the live client dashboard directly online:  
+  🌐 **[https://arnab0513.github.io/Sentinel/](https://arnab0513.github.io/Sentinel/)**
 
 ---
 
