@@ -37,11 +37,12 @@ Sentinel AI is a professional, simulated real-time user behavior tracking and th
 │   ├── data_simulator.py   # Generates normal user baselines & simulated threat vectors
 │   └── __init__.py
 ├── frontend/
-│   ├── templates/
-│   │   └── index.html      # Cyberpunk-style dashboard UI
-│   └── static/
-│       └── dashboard.js    # Client-side API sync and polling logic
+│   └── templates/
+│       └── index.html      # Glassmorphic dashboard UI for Flask
+├── index.html              # Standalone static dashboard for GitHub Pages
 ├── requirements.txt        # Backend dependencies
+├── Procfile                # Production deployment configuration (Gunicorn)
+├── SECURITY.md             # Security policy
 └── README.md               # Project documentation
 ```
 
