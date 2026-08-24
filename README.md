@@ -204,7 +204,8 @@ gunicorn --bind 0.0.0.0:${PORT:-8080} backend.app:app
 
 ---
 
-## 📄 License & Attribution
+## 👥 Contributors & Attribution
 
-Developed with ❤️ by **[Arnab Jana](https://github.com/Arnab0513)**.  
+Developed by **[Arnab Jana](https://github.com/Arnab0513)** with valuable contributions from **Aditi Das** and **Soumik Roy**.
+
 Released under the MIT License.
