@@ -32,16 +32,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Setup Pages
-        uses: actions/configure-pages@v4
+        uses: actions/configure-pages@v5
       - name: Prepare static files
         run: |
           mkdir -p _site
-          cp frontend/templates/index.html _site/index.html
+          if [ -f "index.html" ]; then
+            cp index.html _site/index.html
+          elif [ -f "frontend/templates/index.html" ]; then
+            cp frontend/templates/index.html _site/index.html
+          fi
+          if [ -d "frontend/static" ]; then
+            cp -r frontend/static/* _site/ 2>/dev/null || true
+          fi
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Upload only the prepared static index.html
           path: '_site'
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
