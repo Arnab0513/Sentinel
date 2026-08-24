@@ -6,7 +6,7 @@ Complete Flask Backend with Action APIs
 from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
 import os, sys
-from datetime import datetime
+from datetime import datetime, timezone
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from ml.model import FraudDetectionModel
@@ -18,9 +18,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 app = Flask(
     __name__,
-    template_folder=os.path.join(BASE_DIR, 'frontend', 'templates'),
-    static_folder=os.path.join(BASE_DIR, 'frontend', 'static'),
-    static_url_path='/static'
+    template_folder=os.path.join(BASE_DIR, 'frontend', 'templates')
 )
 CORS(app)
 
@@ -43,7 +41,7 @@ DB = {
 alert_counter = [1000]
 
 def ts():
-    return datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 def score_event(event):
     features      = model.extract_features(event)
@@ -55,6 +53,8 @@ def score_event(event):
 def log_action(action_type, user_id, detail):
     DB['logs'].append({'action': action_type, 'user_id': user_id,
                        'detail': detail, 'timestamp': ts()})
+    if len(DB['logs']) > 500:
+        DB['logs'] = DB['logs'][-500:]
 
 @app.route('/')
 def dashboard():
@@ -62,7 +62,7 @@ def dashboard():
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    data  = request.get_json() or {}
+    data  = request.get_json(silent=True) or {}
     event = {**simulator._normal_event(), **data}
     anomaly_score, risk_score, risk_level, features = score_event(event)
     return jsonify({
@@ -148,7 +148,7 @@ def timeline():
 
 @app.route('/user/block', methods=['POST'])
 def block_user():
-    data    = request.get_json() or {}
+    data    = request.get_json(silent=True) or {}
     user_id = data.get('user_id')
     if not user_id: return jsonify({'error': 'user_id required'}), 400
     DB['blocked'].add(user_id)
@@ -163,7 +163,7 @@ def block_user():
 
 @app.route('/user/watchlist', methods=['POST'])
 def watchlist_user():
-    data       = request.get_json() or {}
+    data       = request.get_json(silent=True) or {}
     user_id    = data.get('user_id')
     risk_score = data.get('risk_score', 0)
     if not user_id: return jsonify({'error': 'user_id required'}), 400
@@ -176,7 +176,7 @@ def watchlist_user():
 
 @app.route('/user/unblock', methods=['POST'])
 def unblock_user():
-    data    = request.get_json() or {}
+    data    = request.get_json(silent=True) or {}
     user_id = data.get('user_id')
     if not user_id: return jsonify({'error': 'user_id required'}), 400
     DB['blocked'].discard(user_id)
@@ -186,7 +186,7 @@ def unblock_user():
 
 @app.route('/alert/dismiss', methods=['POST'])
 def dismiss_alert():
-    data     = request.get_json() or {}
+    data     = request.get_json(silent=True) or {}
     alert_id = data.get('alert_id')
     if not alert_id: return jsonify({'error': 'alert_id required'}), 400
     if alert_id in DB['alerts']:

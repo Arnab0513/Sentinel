@@ -6,7 +6,7 @@ In production: replace with real log ingestion (Kafka, Elasticsearch, etc.)
 
 import random
 import math
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 
 class DataSimulator:
@@ -93,7 +93,7 @@ class DataSimulator:
     def generate_timeline_data(self, points: int = 60) -> list[dict]:
         """Generate time-series anomaly scores for the chart."""
         timeline = []
-        base_time = datetime.utcnow() - timedelta(minutes=points)
+        base_time = datetime.now(timezone.utc) - timedelta(minutes=points)
 
         for i in range(points):
             # Create occasional spikes
@@ -119,7 +119,7 @@ class DataSimulator:
         user   = random.choice(self.USERS)
         hour   = random.randint(8, 18)         # Working hours
         minute = random.randint(0, 59)
-        now    = datetime.utcnow().replace(hour=hour, minute=minute)
+        now    = datetime.now(timezone.utc).replace(hour=hour, minute=minute)
 
         event = {
             'user_id':        user['id'],

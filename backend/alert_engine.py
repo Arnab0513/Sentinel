@@ -3,7 +3,7 @@ SENTINEL — Alert Engine
 Evaluates events, generates structured alerts, manages admin actions.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 import random
 
 
@@ -31,7 +31,7 @@ class AlertEngine:
             'title': self._build_title(event, risk_level),
             'message': self._build_message(event),
             'anomaly_score': round(anomaly_score, 4),
-            'timestamp': datetime.utcnow().strftime('%H:%M:%S'),
+            'timestamp': datetime.now(timezone.utc).strftime('%H:%M:%S'),
             'action_taken': 'blocked' if event['user_id'] in self._blocked else 'pending',
             'ip_address': event.get('ip_address', 'unknown'),
             'location': event.get('location', 'unknown')

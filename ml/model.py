@@ -30,7 +30,7 @@ class FraudDetectionModel:
             contamination = contamination,
             max_samples   = 'auto',
             random_state  = 42,
-            n_jobs        = -1
+            n_jobs        = 1
         )
         self.scaler         = StandardScaler()
         self.is_trained     = False
